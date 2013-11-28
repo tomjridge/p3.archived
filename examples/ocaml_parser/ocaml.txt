@@ -1,0 +1,25 @@
+
+let rec allocate_sectors (d,fs) = (match d with
+  | Leaf(l,bs) -> (
+    let (l,fs) = 
+      if l.backing_sector3 = None7 then 
+        let (sref,fs) = free fs in
+        ({l with backing_sector3 = Dirty7(sref)},fs)
+      else
+        (l,fs)
+    in
+    (Leaf(l,bs),fs))
+  | Node1(l,ts) -> (
+    let (ts,fs) = List.fold_right 
+      (fun t -> fun (ts,fs) -> let (t',fs') = allocate_sectors (t,fs) in (t'::ts,fs')) 
+      ts 
+      ([],fs) 
+    in
+    let (l,fs) = 
+      if l.backing_sector3 = None7 then 
+        let (sref,fs) = free fs in
+        ({l with backing_sector3 = Dirty7(sref)},fs)
+      else
+        (l,fs)
+    in
+    (Node1(l,ts),fs)))

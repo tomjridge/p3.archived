@@ -1,0 +1,23 @@
+The subdirectories are:
+
+  * `actions` - examples involving applying actions (in addition to
+    parsing)
+
+  * `binarized_grammars` - some grammars in binarized form (P3
+    typically transforms grammars to binarized form before parsing)
+
+  * `grammars` - some example grammars; can be parsed using
+    e.g. `../src/earley2_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt`
+
+  * `inputs` - inputs for grammars in `grammars`
+
+  * `lexer` - example of using P3 with a lexing pass before parsing
+
+  * `modular_opsem` - example of modular specification of parsers, and
+    their combination (lambda calculus, arithmetic and booleans);
+    culminates in a parser and evaluator for a lambda calculus
+    extended with various constructs
+
+  * `ocaml_parser` - parser for OCaml, based on the official OCaml
+    grammar
+

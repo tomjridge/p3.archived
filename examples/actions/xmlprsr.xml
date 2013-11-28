@@ -1,0 +1,76 @@
+<state>
+<time>6</time>
+
+
+<protos>
+<obj><clazz>User</clazz><id>FIXMEid</id><fields><key>password</key><value>FIXME password</value><key>username</key><value>FIXME username</value></fields></obj>
+
+<obj><clazz>Task</clazz><id>FIXMEid</id><fields><key>descr</key><value>FIXME descr</value><key>date</key><value>FIXME date</value></fields></obj>
+
+<obj><clazz>Status</clazz><id>FIXMEid</id><fields><key>status</key><value>FIXME status</value></fields></obj>
+
+<obj><clazz>Staff</clazz><id>FIXMEid</id><fields><key>mobile</key><value>FIXME mobile</value><key>home_phone</key><value>FIXME home_phone</value><key>dob</key><value>FIXME dob</value><key>last</key><value>FIXME last</value><key>middle</key><value>FIXME middle</value><key>first</key><value>FIXME first</value></fields></obj>
+
+<obj><clazz>Person</clazz><id>FIXMEid</id><fields><key>mobile</key><value>FIXME mobile</value><key>home_phone</key><value>FIXME home_phone</value><key>dob</key><value>FIXME dob</value><key>last</key><value>FIXME last</value><key>middle</key><value>FIXME middle</value><key>first</key><value>FIXME first</value></fields></obj>
+
+<obj><clazz>Note</clazz><id>FIXMEid</id><fields><key>text</key><value>FIXME</value><key>date</key><value>201X-XX-XX</value></fields></obj>
+
+<obj><clazz>Gift</clazz><id>FIXMEid</id><fields><key>date_and_comment</key><value></value><key>interests</key><value>0.00</value></fields></obj>
+
+<obj><clazz>Address</clazz><id>FIXMEid</id><fields><key>postcode</key><value>FIXME postcode</value><key>address2</key><value>FIXME address2</value><key>address1</key><value>FIXME address1</value></fields></obj>
+</protos>
+
+<objs>
+<obj><clazz>Task</clazz><id>id_Task6</id><fields><key>descr</key><value>Meeting with Alf</value><key>date</key><value>2011-01-01</value></fields></obj>
+
+<obj><clazz>Person</clazz><id>id_Person5</id><fields><key>last</key><value>Garnett</value><key>first</key><value>Alf</value><key>mobile</key><value>FIXME mobile</value><key>home_phone</key><value>FIXME home_phone</value><key>dob</key><value>FIXME dob</value><key>middle</key><value>FIXME middle</value></fields></obj>
+
+<obj><clazz>Staff</clazz><id>id_Staff4</id><fields><key>last</key><value>Fawcett</value><key>first</key><value>Warran</value><key>mobile</key><value>FIXME mobile</value><key>home_phone</key><value>FIXME home_phone</value><key>dob</key><value>FIXME dob</value><key>middle</key><value>FIXME middle</value></fields></obj>
+
+<obj><clazz>Staff</clazz><id>id_Staff3</id><fields><key>last</key><value>Ridge</value><key>first</key><value>Tom</value><key>mobile</key><value>FIXME mobile</value><key>home_phone</key><value>FIXME home_phone</value><key>dob</key><value>FIXME dob</value><key>middle</key><value>FIXME middle</value></fields></obj>
+
+<obj><clazz>User</clazz><id>id_User2</id><fields><key>password</key><value>changeme</value><key>username</key><value>warran</value></fields></obj>
+
+<obj><clazz>User</clazz><id>id_User1</id><fields><key>password</key><value>password</value><key>username</key><value>tom</value></fields></obj>
+</objs>
+
+<rlns>
+<Inv><s1>StaffUser</s1><s2>UserStaff</s2></Inv>
+
+<Reln><reln><name>UserStaff</name>
+<src>User</src><dst>Staff</dst><pairs><s1>id_User2</s1><s2>id_Staff4</s2><s1>id_User1</s1><s2>id_Staff3</s2></pairs></reln></Reln>
+
+<Inv><s1>StatusTasks</s1><s2>TaskStatus</s2></Inv>
+
+<Reln><reln><name>TaskStatus</name>
+<src>Task</src><dst>Status</dst><pairs></pairs></reln></Reln>
+
+<Inv><s1>PersonTasks</s1><s2>TaskPerson</s2></Inv>
+
+<Reln><reln><name>TaskPerson</name>
+<src>Task</src><dst>Person</dst><pairs></pairs></reln></Reln>
+
+<Inv><s1>StaffTasks</s1><s2>TaskStaffs</s2></Inv>
+
+<Reln><reln><name>TaskStaffs</name>
+<src>Task</src><dst>Staff</dst><pairs><s1>id_Task6</s1><s2>id_Staff4</s2><s1>id_Task6</s1><s2>id_Staff3</s2></pairs></reln></Reln>
+
+<Inv><s1>PersonNotes</s1><s2>NotePerson</s2></Inv>
+
+<Reln><reln><name>NotePerson</name>
+<src>Note</src><dst>Person</dst><pairs></pairs></reln></Reln>
+
+<Inv><s1>PersonGifts</s1><s2>GiftPerson</s2></Inv>
+
+<Reln><reln><name>GiftPerson</name>
+<src>Gift</src><dst>Person</dst><pairs></pairs></reln></Reln>
+
+<Inv><s1>PersonAddresses</s1><s2>AddressPerson</s2></Inv>
+
+<Reln><reln><name>AddressPerson</name>
+<src>Address</src><dst>Person</dst><pairs></pairs></reln></Reln>
+</rlns>
+
+
+
+</state>
