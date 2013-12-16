@@ -7,9 +7,8 @@
 (*
 Interactive use:
 
-    #directory "../earley2";;
-    #mod_use "earley2.ml";;
-    #mod_use "minip3_e2.ml";; (* runs a lengthy example *)
+    #directory "../earley3_v3";;
+    #mod_use "earley3.ml";;
 
 *)
 
@@ -87,6 +86,22 @@ type 'a ty_substring = SS of 'a * int * int
 type ty_substring' = string ty_substring
 
 let dest_SS (SS(s,i,j)) = (s,i,j)
+
+let content (SS(s,i,j)) = String.sub s i (j-i)
+
+let concatenate_two (SS(s1,i1,j1)) (SS(s2,i2,j2)) = (
+  if (s1=s2) && (j1=i2) then
+    Some (SS(s1,i1,j2))
+  else
+    None)
+
+let rec concatenate_list ss = (match ss with
+|  [] -> None
+| s1::ss -> (match ss with
+  | [] -> Some s1
+  | _ -> (match concatenate_list ss with
+      None -> None
+  |   Some s2 -> concatenate_two s1 s2)))
 
 type term = string
 
@@ -326,32 +341,15 @@ let run_parser3' (o,tmo) p s len = (
   unique rs)
 
 (**
-{2 Example terminal parsers}
-*)
-
-(* consume a single "1" from the input; N.B. prefix parsing! *)
-let raw_a1 (SS(s,i,j)) = (
-  if i<j && s.[i] = '1' then 
-    [SS(s,i,i+1)]
-  else
-    [])
-
-let a1 = mktmparser "1" raw_a1
-
-(* consume (!) the empty string *)
-let raw_eps (SS(s,i,j)) = [SS(s,i,i)]
-
-let eps = fun i -> mktmparser "eps" raw_eps i
-
-
-(**
 {2 Earley parsing}
 *)
 
-open Earley2.Earley_interface (* for field selectors *)
-type item = Earley2.Earley_interface.nt_item
+(* open Earley3.Earley_interface (* for field selectors *) *)
 
+(*
+type item = Earley3.Earley_interface.nt_item
 type production = item * int
+*)
 
 (* the following is boring code to coerce minip3 values to P3 values, so we can use P3_lib.Earley *)
 let p3_of_sym sym = sym
@@ -385,14 +383,29 @@ let oracle_of_parser p s len = (
     `Setup(`G7(g),`Sym7(nt),`P_of_tm7(p_of_tm),`String7(s,len)))
   in
   let s = setup_of_parser p s in
-  let r = Earley2.Earley_interface.earley_full s in
-  let (o,tmo) = match r with `Loop2(_,`Oracle(o,tmo)) -> (o,tmo) in
+  let (o,tmo) = (
+    (* if we think the size overhead will not be too big, we use the
+       imperative version, otherwise the functional version. FIXME
+       total hack *)
+    if len < 5000 then 
+      let r = Earley3_imp.Earley_interface.earley_full s in
+      let (o,tmo) = match r with `Loop2(_,`Oracle(o,tmo)) -> (o,tmo) in
+      (o,tmo)
+    else
+      let r = Earley3_fun.Earley_interface.earley_full s in
+      let (o,tmo) = match r with `Loop2(_,`Oracle(o,tmo)) -> (o,tmo) in
+      (o,tmo))
+  in
   (o,tmo))
 let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_parser
 
 let run_parser3 p s len = (
   let (o,tmo) = oracle_of_parser p s len in
   run_parser3' (o,tmo) p s len)
+
+let p3_run_parser = run_parser3
+
+let p3_run_parser_string p s = run_parser3 p s (String.length s) (* FIXME remove run_parser3 in favour of p3_run_parser *)
 
 (**
 {2 Context definitions}
@@ -470,150 +483,4 @@ let check_and_upd_lc4 p = (fun i -> match i with
 
 let mkntparser nt p = (
   check_and_upd_lc4 (mkntparser' nt p))
-
-
-(**
-{2 Memoization}
-*)
-
-(* example memo function *)
-
-let memo tbl f i = (
-  if (Hashtbl.mem tbl i) then
-    (Hashtbl.find tbl i)
-  else (
-    let v = f i in
-    let _ = Hashtbl.add tbl i v in
-    v))
-
-let memo tbl key_of_input f i = (
-  let k = key_of_input i in
-  match k with 
-  | None -> (f i)
-  | Some k -> (
-    if (Hashtbl.mem tbl k) then 
-      (Hashtbl.find tbl k) 
-    else
-      let v = f i in
-      let _ = Hashtbl.add tbl k v in
-      v))
-
-(* N.B. in P3 we drop the i.s4 component from the key; they are not
-needed, and including them causes lots of unnecessary comparisons of
-potentially very long strings *)
-let key_of_input i = (match i with 
-  | Inr i -> (
-    let ss = i.ss4 in
-    let lc4 = normalize_context i i.lc4 ss in
-    let SS(s,l,h) = ss in
-    let k = (lc4,SS(box_get_key i.box4,l,h)) in (* about 10% slowdown if we include box key *)
-    Some k)
-  | _ -> None)
-
-let memo_p3 tbl p i = (
-  memo tbl key_of_input p i)
-
-
-(**
-{2 Examples}
-*)
-
-let rec parse_E = (fun i -> mkntparser' "E" (
-  ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
-  |||| (a1 >>>> (fun _ -> 1)))
-  i)
-let (_:int parser3') = parse_E
-
-(* a more precise oracle; in fact, the only syms we get called on are E and (E*E) *)
-let oracle = (fun (sym1,sym2) -> fun (i,j) -> 
-  match (sym1,sym2) with
-  | (`NT "E",`NT("(E*E)")) -> (upto' i (j-1))
-  | (`NT "E",`NT("E")) -> (upto' i j)
-  | _ -> failwith "oracle: 757")
-
-let tmoracle = (fun tm -> fun (i,j) -> j=(i+1))
-
-let _ = run_parser3' (oracle,tmoracle) parse_E "1111111" 7
-(* - : int list = [7] *)
-
-(* we can afford to be sloppy in our handling of terminal parsers because mktmparser only returns a result if called on exactly the right substring *)
-let oracle = fun (sym1,sym2) -> fun ((i,j)) -> (upto' i j)
-
-let _ = run_parser3' (oracle,tmoracle) parse_E "1111111" 7
-(* - : int list = [7] *)
-
-let _ = sym_of_parser parse_E
-(* - : symbol = `NT "E" *)
-
-let m = grammar_of_parser parse_E
-(*
-val m : mid =
-{rules7 =
-  [("(E*E)", Seq (`NT "E", `NT "E")); ("(E*(E*E))", Seq (`NT "E", `NT "(E*E)"));
-   ("((E*(E*E))+1)", Alt (`NT "(E*(E*E))", `TM "1"));
-   ("E", Atom (`NT "((E*(E*E))+1)"))];
- tmparsers7 = [("1", <fun>)]}
-*)
-
-let (oracle,tmo) = oracle_of_parser parse_E "1111111" 7
-
-let _ = oracle (`NT "E",`NT "(E*E)") ((0,7))
-
-let _ = tmo "1" (0,1)
-(* true *)
-let _ = tmo "1" (0,0)
-(* false *)
-
-let _ = run_parser3 parse_E "1111111" 7
-(* int list = [7] *)
-
-(* example 4 *)
-let tbl = Hashtbl.create 0
-
-let rec parse_E = (fun i -> memo_p3 tbl (mkntparser "E" (
-  ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
-  |||| (a1 >>>> (fun _ -> 1))
-  |||| (eps >>>> (fun _ -> 0))))
-  i)
-let (_:int parser3') = parse_E
-
-(* following should take about 6 secs when compiled to native code *)
-let _ = (
-  let s = "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" in
-  let [n] = run_parser3 parse_E s (String.length s) in
-  print_endline (string_of_int n))
-
-
-(*
-let _ = (
-  let s = "11111" in
-  let [n] = run_parser3 parse_E s (String.length s) in
-  print_endline (string_of_int n))
-*)
-
-
-(* example using char arrays *)
-(*
-(* consume a single "1" from the input; N.B. prefix parsing! *)
-let raw_a1' (SS(s,i,j)) = (
-  if i<j && s.(i) = '1' then 
-    [SS(s,i,i+1)]
-  else
-    [])
-
-let a1' = mktmparser "1" raw_a1'
-
-let tbl = Hashtbl.create 0
-
-let rec parse_E = (fun i -> memo_p3 tbl (mkntparser "E" (
-  ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
-  |||| (a1' >>>> (fun _ -> 1))
-  |||| (eps >>>> (fun _ -> 0))))
-  i)
-
-let _ = (
-  let s = Array.make 100 '1' in
-  let [n] = run_parser3 parse_E s (Array.length s) in
-  print_endline (string_of_int n))
-*)
 

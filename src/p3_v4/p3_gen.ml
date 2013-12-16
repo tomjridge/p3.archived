@@ -13,12 +13,11 @@ module Codegen3 = struct
   let nts_of_grammar = P1_lib.P1_core.Common.nts_of_grammar
   let drop_actions = P1_lib.P1_core.ParseGrammar.drop_actions
   
-  
   let str_of_SYM sym = match sym with 
     | `NT nt -> "parse_"^nt
     | `TM tm -> (
       let tm = String.escaped tm in
-      "(mktmparser \""^tm^"\" (term_to_parser \""^tm^"\"))")
+      "(term_to_parser \""^tm^"\")")
   
   let str_of_SYMS alt = "(" ^ (String.concat "***>" (List.map str_of_SYM alt)) ^ ")"
   
@@ -28,7 +27,7 @@ module Codegen3 = struct
   
   let str_of_RHS rhs = "("^ (String.concat "||||" (List.map str_of_SYMSACT rhs)) ^")"
   
-  let str_of_RULE (nt,rhs) = (str_of_SYM (`NT nt))^" = fun i -> (mcu4 tbl_"^nt^" \""^nt^"\" (fun i -> unique4 ("^(str_of_RHS rhs)^" i)) i)"
+  let str_of_RULE (nt,rhs) = (str_of_SYM (`NT nt))^" = fun i -> (mcu4 tbl_"^nt^" \""^nt^"\" (fun i -> (*unique4*) ("^(str_of_RHS rhs)^" i)) i)"
   
   let str_of_RULES rs = "let rec "^(String.concat "\n\n and " (List.map str_of_RULE rs))
   
@@ -87,7 +86,7 @@ let p3pre =
   let _ = (debugging:=args.debug)\n\
   \n\
   (* this is no longer included in Everything, so we make it available here *)\n\
-  let term_to_parser = P1_lib.P1_terminal_parsers.RawParsers.term_to_parser\n\
+  let term_to_parser = P3_lib.P3_basic_parsers.term_to_parser\n\
   \n\
   (* p3pre.ml end *)\n\
   \n\
@@ -120,11 +119,19 @@ let p3post =
   let main = (\n\
   \  let txt = read_file_as_string args.input in\n\
   \  let p = parse_start in\n\
-  \  let rs = p3_run_parser p txt in\n\
+  \  let rs = p3_run_parser p txt (String.length txt) in\n\
   \  let _ = (\n\
   \    if (!debugging && rs=[]) then (\n\
-  \      let Some(s0) = !Earley2.Earley_interface.last_earley_state in\n\
-  \      let m = Earley2.Earley_debug.max_position s0 in\n\
+  \      let m = (match (!Earley3_imp.Earley_interface.last_earley_state) with
+           | None -> (
+             let Some(s0) = !Earley3_fun.Earley_interface.last_earley_state in
+             let m = Earley3_fun.Earley_debug.max_position s0 in
+             m)
+           | _ -> (
+             let Some(s0) = !Earley3_imp.Earley_interface.last_earley_state in
+             let m = Earley3_imp.Earley_debug.max_position s0 in
+             m))
+         in
   \      let _ = debug_endline (\"Failed to parse. Max position: \"^(string_of_int m)) in\n\
   \      let _ = debug_endline (\"Remaining text:\"^(String.sub txt m (String.length txt - (m)))) in\n\
   \      ()\n\

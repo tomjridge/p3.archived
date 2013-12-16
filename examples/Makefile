@@ -13,7 +13,7 @@ actions: FORCE
 	cd actions && make
 
 grammars: FORCE
-	$(BASEDIR)/earley2_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt
+	$(BASEDIR)/earley3_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt
 
 lexer: FORCE
 	ocamlbuild -I lexer arith.ml

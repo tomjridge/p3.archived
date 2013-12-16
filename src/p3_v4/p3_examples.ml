@@ -1,11 +1,17 @@
+(* 
+
+    #directory "../_build";;
+    #load "p3.cma";;    
+
+*)
+
 (**
 {1 p3_examples.ml}
 {2 P3 examples}
 *)
 
-(* need to #use "p3_lib.ml" first *)
-open P3_lib
 
+open P3_lib
 
 open P1_lib.P1_core.Prelude
 open P1_lib.P1_core.Types
@@ -29,7 +35,7 @@ let rec parse_E = (fun i -> (mkntparser "E" (
 let p = parse_E
 let _ = grammar_of_parser p
 let txt = "111111"
-let _ = p3_run_parser p txt
+let [6] = p3_run_parser_string p txt
 
 
 
@@ -52,8 +58,19 @@ let p = parse_E
    http://rosettacode.org/wiki/Find_limit_of_recursion#OCaml
 *)
 let txt = "111111111111111111111111111111"
-let _ = p3_run_parser p txt
+let [30] = p3_run_parser_string p txt
 
+
+(* parse trees *)
+let rec parse_E = (fun i -> mkntparser "E" (
+  ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> `Node(x,y,z)))
+  |||| ((a "1") >>>> (fun _ -> `LF("1")))
+  |||| ((a "") >>>> (fun _ -> `LF(""))))
+  i)
+
+let p = parse_E
+let txt = "11"
+let _ = p3_run_parser_string p txt
 
 
 
@@ -65,7 +82,10 @@ let parse_E = memo_rec2 (fun self -> (mkntparser "E" (
 
 let p = parse_E
 let txt = "111111111111111111111111111111"
-let _ = p3_run_parser p txt
+let [30] = p3_run_parser_string p txt
+
+
+
 
 
 
@@ -90,7 +110,7 @@ let rec parse_E = (star parse_1)
 
 let p = parse_E
 let txt = "111111111111111111111111111111"
-let _ = p3_run_parser p txt
+let _ = p3_run_parser_string p txt
 
 (* the following gives the same (perhaps unexpected) result; we only allow good trees ! *)
 let rec parse_E = (star (parse_eps |||| parse_1))
@@ -112,6 +132,6 @@ let _ = grammar_of_parser (itern 5 parse_1)
 
 let p = itern 5 parse_1
 let txt = "11111"
-let _ = p3_run_parser p txt
+let _ = p3_run_parser_string p txt
 
 

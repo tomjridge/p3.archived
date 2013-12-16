@@ -2,7 +2,7 @@ SHELL=bash
 
 OCAMLBUILD=ocamlbuild
 
-all: all_in_one
+all: all_in_one_p3v4
 
 # make links to all ml files so that they appear in current directory
 # this is essentially so that ocamlbuild keeps files in _build, not
@@ -10,43 +10,115 @@ all: all_in_one
 # e.g. p3.cmxa and associated .cmi files from other projects
 all_in_one: FORCE 
 	rm -f *.ml
-	find p1 earley p3_v2 misc earley2 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	find p1 p3_v3 misc earley3_v3 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
+
+all_in_one_p3v3_earley3: FORCE 
+	rm -f *.ml
+	find p1 p3_v3 misc earley3 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
+
+all_in_one_p3v3_earley3_v2: FORCE 
+	rm -f *.ml
+	find p1 p3_v3 misc earley3_v2 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
+
+all_in_one_p3v3_earley3_v3: FORCE 
+	rm -f *.ml
+	find p1 p3_v3 misc earley3_v3 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
+
+all_in_one_p3v4: FORCE 
+	rm -f *.ml
+	find p1 p3_v4 misc earley3_v4 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
+
+all_in_one_e2: FORCE 
+	rm -f *.ml
+	find p1 p3_v2 misc earley2 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
 	$(OCAMLBUILD) earley2_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
 
-earley: FORCE
-	$(OCAMLBUILD) -I earley earley/earley.byte
+earley1: FORCE
+	$(OCAMLBUILD) earley1/earley.byte
 
 earley2: FORCE
-	$(OCAMLBUILD) -I earley2 earley2/earley2.byte
-	$(OCAMLBUILD) -Is p1,earley2 earley2/earley2_main.native
+	$(OCAMLBUILD) earley2/earley2.byte
+	$(OCAMLBUILD) -Is p1 earley2/earley2_main.native
 
-minip3: FORCE
-	$(OCAMLBUILD) -Is earley,minip3 minip3/minip3.native
+earley3: FORCE
+	$(OCAMLBUILD) earley3/earley3.byte
+	$(OCAMLBUILD) -Is p1 earley3/earley3_main.native
+
+earley3_v2: FORCE
+	$(OCAMLBUILD) earley3_v2/earley3_fun.byte
+	$(OCAMLBUILD) -Is p1 earley3_v2/earley3_main.native
+
+earley3_v3: FORCE
+	$(OCAMLBUILD) earley3_v3/earley3_imp.byte
+	$(OCAMLBUILD) -Is p1 earley3_v3/earley3_main.native
+
+earley3_v4: FORCE
+	$(OCAMLBUILD) earley3_v4/earley3_imp.byte earley3_v4/earley3_fun.byte
+#	$(OCAMLBUILD) -Is p1 earley3_v3/earley3_main.native
+
+
 
 minip3_e2: FORCE
-	$(OCAMLBUILD) -Is earley2,minip3_e2 minip3_e2/minip3_e2.native
+	$(OCAMLBUILD) -Is earley2 minip3_e2/minip3_e2.native
+
+minip3_v2: FORCE
+	$(OCAMLBUILD) -Is earley1 minip3_v2/minip3.native
 
 p1: FORCE
-	$(OCAMLBUILD) -I p1 p1/p1_lib.byte
-
-p3: FORCE
-	$(OCAMLBUILD) -Is p1,earley2 p3/p3_lib.byte p3/p3_examples.byte
+	$(OCAMLBUILD) p1/p1_lib.byte
 
 p3_e1: FORCE
-	$(OCAMLBUILD) -Is p1,earley p3_e1/p3_lib.byte
+	$(OCAMLBUILD) -Is p1,earley1 p3_e1/p3_lib.byte
+
+p3_v1: FORCE
+	$(OCAMLBUILD) -Is p1,earley2 p3_v1/p3_lib.byte p3_v1/p3_examples.byte
 
 p3_v2: FORCE
 	$(OCAMLBUILD) -Is p1,earley2 p3_v2/p3_lib.byte p3_v2/p3_examples.byte p3_v2/p3_gen.native
 
+p3_v3: FORCE
+	$(OCAMLBUILD) -Is p1,earley3 p3_v3/p3_lib.byte p3_v3/p3_examples.byte p3_v3/p3_gen.native
+
+p3_v4: FORCE
+	$(OCAMLBUILD) -Is p1,earley3_v4 p3_v4/p3_lib.byte p3_v4/p3_examples.byte p3_v4/p3_gen.native p3.cmxa
+
+
+
 # export all ml files in a single directory
 export: FORCE
 	-mkdir export
-	find p1 earley p3 -maxdepth 1 -name "*.ml" -exec cp \{\} export \;
+	find p1 earley2 p3_v2 -maxdepth 1 -name "*.ml" -exec cp \{\} export \;
 
 doc: all_in_one FORCE
 	$(OCAMLBUILD) p3.docdir/index.html
 
+earley2.ml.md: FORCE
+	echo "~~~{.ocaml}" >$@
+	cat earley2/earley2.ml >> $@
+	echo "~~~" >> $@
+
+earley2.html: earley2.ml.md
+	pandoc -s $< > $@
+
+
+earley3.ml.md: FORCE
+	echo "~~~{.ocaml}" >$@
+	cat earley3/earley3.ml >> $@
+	echo "~~~" >> $@
+
+earley3.html: earley3.ml.md
+	pandoc -s $< > $@
+
+
+
+
 clean: 
+	rm -f earley2.ml.md earley2.html
 	rm -f p3.cmxa *.ml 
 	rm -rf export
 	$(OCAMLBUILD) -clean

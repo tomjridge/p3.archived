@@ -47,12 +47,22 @@ let main () =
     `P_of_tm7(P1_terminal_parsers.RawParsers.term_to_parser),
     `String7(txt,String.length txt)) 
   in
-  let l2 = Earley2.Earley_interface.earley_full setup in
-  let (l2_done5) = (match l2 with
-    | `Loop2(`Done(x),_) -> (x)) 
+  let i = (
+    if String.length txt < 5000 then 
+      let open Earley3_imp in
+      let l2 = Earley_interface.earley_full setup in
+      let (l2_done5) = (match l2 with
+        | `Loop2(`Done(x),_) -> (x)) 
+      in
+      List.length (Earley_private_types.Set_todo_done_item.elements l2_done5)
+    else
+      let open Earley3_fun in
+      let l2 = Earley_interface.earley_full setup in
+      let (l2_done5) = (match l2 with
+        | `Loop2(`Done(x),_) -> (x)) 
+      in
+      List.length (Earley_private_types.Set_todo_done_item.elements l2_done5))
   in
-  (* FIXME remove the following if timing *)
-  let i = List.length (Earley2.Earley_interface.Set_sym_item.elements l2_done5) in
   (* let j = List.length (Earley.Earley_interface.Set_nt_item_int.elements l2_prod5) in *)
   let _ = print_endline ("Done items: "^(string_of_int i)) in
   (* let _ = print_endline ("Productions: "^(string_of_int j)) in *)

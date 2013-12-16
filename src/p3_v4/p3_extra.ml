@@ -4,46 +4,61 @@
 
 *)
 
+(*
+
+Interactive use
+
+    #use "topfind";;
+    #require "unix";;
+
+    #directory "../p1";;
+    #mod_use "p1_terminal_parsers.ml";;
+    #mod_use "p1_core.ml";;
+    #mod_use "p1_everything.ml";;
+    #mod_use "p1_lib.ml";;
+
+    #directory "../earley2";;
+    #mod_use "earley2.ml";;
+    
+    #mod_use "p3_core.ml";;
+*)
+
 
 module P3_memo = struct
 
-  open P1_lib.P1_core.Prelude
-  open P1_lib.P1_core.Types
-(*  open Earley.Earley_interface *)
   open P3_core
 
-  let generic_memo tbl key_of_input f i = (
+  let memo tbl key_of_input f i = (
     let k = key_of_input i in
     match k with 
     | None -> (f i)
     | Some k -> (
-      if (MyHashtbl.mem tbl k) then (MyHashtbl.find tbl k) else
+      if (Hashtbl.mem tbl k) then 
+        (Hashtbl.find tbl k) 
+      else
         let v = f i in
-        let _ = MyHashtbl.add tbl k v in
+        let _ = Hashtbl.add tbl k v in
         v))
-
-  (* FIXME do we already know that the context is normalized? No. It is not necessarily normalized relative to i.i4,i.j4 *)
-  let key_of_input nt = (fun i -> match i with 
-    | Three i -> (
-      let i = { i with lc4=(P1_lib.P1_core.Context.normalize_context i.lc4 (lc4_substring_of i)) } in
-      let k = (nt,i.lc4,lc4_substring_of i) in
+  
+  (* N.B. in P3 we drop the i.s4 component from the key; they are not
+  needed, and including them causes lots of unnecessary comparisons of
+  potentially very long strings *)
+  let key_of_input i = (match i with 
+    | Inr i -> (
+      let ss = i.ss4 in
+      let lc4 = normalize_context i i.lc4 ss in
+      let SS(s,l,h) = ss in
+      let k = (lc4,SS(Box.box_get_key i.box4,l,h)) in (* about 10% slowdown if we include box key *)
       Some k)
     | _ -> None)
-
+  
   let memo_p3 tbl p i = (
-    let nt = dest_NT (sym_of_parser p) in
-    generic_memo tbl (key_of_input nt) p i)
-
-  (* don't need anymore - all nt parsers check context anyway 
-  let memo_check_and_upd_lc4 tbl p i = (
-    let nt = dest_NT (dest_OutOne (p One)) in
-    generic_memo tbl (key_of_input nt) (check_and_upd_lc4 p) i)
-  *)
+    memo tbl key_of_input p i)
 
   (* version that creates table implicitly *)
   (*
   let memo_check_and_upd_lc4' p = (
-    let tbl = MyHashtbl.create 100 in
+    let tbl = Hashtbl.create 100 in
     fun i -> (memo_check_and_upd_lc4 tbl p i))
   *)
 
@@ -61,22 +76,27 @@ module P3_memo = struct
       in
         g                                                
   *)
+
   (* p takes an extra initial argument, its "completion" *)
+  
   let memo_rec2 p = (
-    let tbl = MyHashtbl.create 100 in
+    let tbl = Hashtbl.create 100 in
     let rec g = (fun i -> 
       let nt = dest_NT (sym_of_parser (p g)) in
-      generic_memo tbl (key_of_input nt) (p g) i)
+      memo tbl key_of_input (p g) i)
     in
     g)
+  
 
   (* some additional functions used by the code generator - slight abbreviations of the above *)
   let mcu4 tbl nt p = memo_p3 tbl (mkntparser nt p)
 
   (* FIXME not sure about the use of unique everywhere *)
+  (*
   let unique4 i = (match i with 
     | OutThree rs -> (OutThree (P1_lib.P1_core.Prelude.unique rs))
     | _ -> i)
+  *)
 
 end
 
@@ -92,19 +112,23 @@ FIXME probably we should use the named versions as the FunctorBasicParsers, and 
 
 *)
 
-module P3_basic_parsers = struct
+module P3_basic_parsers = (struct
 
 (*  open Earley.Earley_interface *)
-  open P1_lib.P1_core.Prelude  
+(*  open P1_lib.P1_core.Prelude  
   open P1_lib.P1_core.Types
-  open P1_lib.P1_core.Substring
+  open P1_lib.P1_core.Substring *)
   open P1_lib.P1_terminal_parsers.RawParsers
-  type 'a parser123 = 'a P3_core.parser123
-  let mktmparser = P3_core.mktmparser
+  open P3_core
 
-  let wrap name p = mktmparser name p
+  type 'a parser123 = 'a P3_core.ty_substring P3_core.parser3'
+  type parser3'' = string ty_substring parser3'
 
-  let (_:term -> raw_parser -> substring parser123) = wrap
+  let mktmparser = (P3_core.mktmparser:term -> string P3_core.raw_parser -> parser3'')
+
+  let wrap name (p:P1_lib.P1_core.Types.raw_parser) = mktmparser name (fun (SS(s,i,j)) -> List.map (fun ((s,i,j),y) -> SS(s,i,j)) (p (s,i,j)))
+
+  let (_:term -> P1_lib.P1_core.Types.raw_parser -> parser3'') = wrap
 
   let q1 s = ("\""^s^"\"") (* quote *)
 
@@ -124,7 +148,7 @@ module P3_basic_parsers = struct
   let parse1 pred = wrap (gensym "parse1") (parse1 pred)  
   
   let parse_EOF = wrap "parse_EOF" (parse_EOF)
-  
+
   let parse_while pred = wrap (gensym "parse_while") (parse_while pred)
     
   let parse_azAZ = wrap "parse_azAZ" parse_azAZ
@@ -171,7 +195,39 @@ module P3_basic_parsers = struct
   
   let parse_never = wrap "parse_never" never
 
-end
+  let term_to_parser s = (match s with
+    | "?all?"   -> parse_all
+    | "?AZS?" -> parse_AZS
+    | "?AZ?" -> parse_AZ
+    | "?az?" -> parse_az
+    | "?azs?" -> parse_azs
+    | "?azAZ?" -> parse_azAZ
+    | "?azAZs?" -> parse_azAZs
+    | "?EOF?" -> parse_EOF
+    | "?epsws?" -> parse_epsws
+    | "?ident?" -> parse_ident
+    | "?newline?" -> parse_newline
+    | "?notbracket?" -> parse_notbracket
+    | "?notcurlyr?" -> parse_notcurlyr
+    | "?notdquote?" -> parse_notdquote
+    | "?notgt?" -> parse_notgt
+    | "?notlt?" -> parse_notlt
+    | "?notltgt?" -> parse_notltgt
+    | "?notsquote?" -> parse_notsquote
+    | "?num?" -> parse_num
+    | "?float?" -> parse_float
+    | "?ws?" -> parse_ws
+    | "\"\"" -> a ""
+    | _ -> ( (* interpret as a literal *)
+        if String.length s < 2 then failwith ("term_to_parser: "^s)
+        else
+    let _ = () (* print_string ("term_to_parser: treating "^s^" as a literal\n") *) in
+    (a (String.sub s 1 (String.length s - 2)))))
+
+  let (_:term -> parser3'') = term_to_parser
+
+
+end)
 
 
 ;;

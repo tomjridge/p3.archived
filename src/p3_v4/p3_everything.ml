@@ -1,5 +1,5 @@
 include P1_lib.P1_core.Prelude  
-include P1_lib.P1_core.Types
+(* include P1_lib.P1_core.Types prefer p3 types e.g. for term *)
 include P1_lib.P1_core.Substring
 include P1_lib.P1_core.Common
 (*  include RawParsers - lots of names that clash with eg BasicParsers and P3BasicParsers *)
