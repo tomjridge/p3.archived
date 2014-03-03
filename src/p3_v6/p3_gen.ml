@@ -120,23 +120,6 @@ let p3post =
   \  let txt = read_file_as_string args.input in\n\
   \  let p = parse_start in\n\
   \  let rs = p3_run_parser p txt (String.length txt) in\n\
-  \  let _ = (\n\
-  \    if (!debugging && rs=[]) then (\n\
-  \      let m = (match (!Earley3_imp.Earley_interface.last_earley_state) with
-           | None -> (
-             let Some(s0) = !Earley3_fun.Earley_interface.last_earley_state in
-             let m = Earley3_fun.Earley_debug.max_position s0 in
-             m)
-           | _ -> (
-             let Some(s0) = !Earley3_imp.Earley_interface.last_earley_state in
-             let m = Earley3_imp.Earley_debug.max_position s0 in
-             m))
-         in
-  \      let _ = debug_endline (\"Failed to parse. Max position: \"^(string_of_int m)) in\n\
-  \      let _ = debug_endline (\"Remaining text:\"^(String.sub txt m (String.length txt - (m)))) in\n\
-  \      ()\n\
-  \    ) else ())\n\
-  \  in\n\
   \  ())\n\
   \n\
   \n\

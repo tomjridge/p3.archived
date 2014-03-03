@@ -378,23 +378,22 @@ let oracle_of_parser p s len = (
           let p = List.assoc tm m.tmparsers7 in
           fun (s,i,j) -> 
             let rs = p (SS(s,i,j)) in
-            List.map (fun s1 -> let SS(s',i',j') = s1 in ((s',i',j'),(s',j',j))) rs)
+            List.map (fun s1 -> let SS(s',i',j') = s1 in j') rs)
     in
-    `Setup(`G7(g),`Sym7(nt),`P_of_tm7(p_of_tm),`String7(s,len)))
+    object
+      method g7=g; 
+      method sym7=nt; 
+      method p_of_tm7=p_of_tm; 
+      method string7=s; 
+      method length7=len;
+      method uni7=None;
+    end)
   in
   let s = setup_of_parser p s in
   let (o,tmo) = (
-    (* if we think the size overhead will not be too big, we use the
-       imperative version, otherwise the functional version. FIXME
-       total hack *)
-    if len < 5000 then 
-      let r = Earley3_imp.Earley_interface.earley_full s in
-      let (o,tmo) = match r with `Loop2(_,`Oracle(o,tmo)) -> (o,tmo) in
-      (o,tmo)
-    else
-      let r = Earley3_fun.Earley_interface.earley_full s in
-      let (o,tmo) = match r with `Loop2(_,`Oracle(o,tmo)) -> (o,tmo) in
-      (o,tmo))
+    let r = Earley3.Earley_interface.earley_full s in
+    let (o,tmo) = (r#oracle,r#tmoracle) in
+    (o,tmo))
   in
   (o,tmo))
 let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_parser

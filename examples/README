@@ -7,7 +7,7 @@ The subdirectories are:
     typically transforms grammars to binarized form before parsing)
 
   * `grammars` - some example grammars; can be parsed using
-    e.g. `../src/earley2_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt`
+    e.g. `../src/earley3_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt`
 
   * `inputs` - inputs for grammars in `grammars`
 
@@ -20,4 +20,6 @@ The subdirectories are:
 
   * `ocaml_parser` - parser for OCaml, based on the official OCaml
     grammar
+
+  * `ocamlyacc` - parser for ocamlyacc .mly grammar files
 

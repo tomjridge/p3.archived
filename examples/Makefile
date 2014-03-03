@@ -7,7 +7,7 @@ BUILD=$(BASEDIR)/_build
 OCAMLI_BYTE=-cflags '-I $(BUILD)' -lflags '-I $(BUILD) p3.cma'
 OCAMLI_NATIVE=-cflags '-I $(BUILD)' -lflags '-I $(BUILD) p3.cmxa'
 
-all: actions grammars lexer modular_opsem ocaml_parser
+all: actions grammars lexer modular_opsem ocaml_parser ocamlyacc
 
 actions: FORCE
 	cd actions && make
@@ -25,9 +25,13 @@ modular_opsem: FORCE
 ocaml_parser: FORCE
 	cd ocaml_parser && make
 
+ocamlyacc: FORCE
+	cd ocamlyacc && make
+
 clean: FORCE
 	ocamlbuild -clean
 	cd actions && make clean
 	cd ocaml_parser && make clean
+	cd ocamlyacc && make clean
 
 FORCE:

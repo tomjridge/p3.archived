@@ -2,7 +2,7 @@ SHELL=bash
 
 OCAMLBUILD=ocamlbuild
 
-all: all_in_one_p3v4
+all: all_in_one_p3v6
 
 # make links to all ml files so that they appear in current directory
 # this is essentially so that ocamlbuild keeps files in _build, not
@@ -33,6 +33,18 @@ all_in_one_p3v4: FORCE
 	find p1 p3_v4 misc earley3_v4 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
 	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
 
+all_in_one_p3v5: FORCE 
+	rm -f *.ml
+	find p1 p3_v5 misc earley3_v5 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3.cma p3.cmxa p3_gen.native g2g.native
+
+all_in_one_p3v6: FORCE 
+	rm -f *.ml
+	find p1 p3_v6 misc earley3_v6 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) earley3_main.native p3_examples.native p3_gen.native g2g.native p3.cma p3.cmxa 
+
+
+
 all_in_one_e2: FORCE 
 	rm -f *.ml
 	find p1 p3_v2 misc earley2 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
@@ -61,7 +73,23 @@ earley3_v4: FORCE
 	$(OCAMLBUILD) earley3_v4/earley3_imp.byte earley3_v4/earley3_fun.byte
 #	$(OCAMLBUILD) -Is p1 earley3_v3/earley3_main.native
 
+earley3_v5: FORCE
+	$(OCAMLBUILD) earley3_v5/universe.byte
+	$(OCAMLBUILD) -Is p1 earley3_v5/earley3_main.byte
+	$(OCAMLBUILD) -Is p1 earley3_v5/earley3_main.native
+#	$(OCAMLBUILD) earley3_v5/int_utils.byte earley3_v5/earley3_utils.byte
+#	$(OCAMLBUILD) earley3_v5/earley3_int.byte
+#	#	$(OCAMLBUILD) earley3_v5/earley3_fun.byte
 
+earley3_v6: FORCE
+	$(OCAMLBUILD) -Is p1 earley3_v6/e3_core.byte earley3_v6/earley3_main.native 
+	echo "~~~{.ocaml}" >tmp.md
+	cat earley3_v6/e3_core.ml >> tmp.md
+	echo "~~~" >> tmp.md
+	pandoc -s tmp.md > tmp.html
+
+minip3_v1: FORCE
+	$(OCAMLBUILD) -Is minip3_v1 minip3_v1/minip3.native
 
 minip3_e2: FORCE
 	$(OCAMLBUILD) -Is earley2 minip3_e2/minip3_e2.native
@@ -71,6 +99,10 @@ minip3_v2: FORCE
 
 p1: FORCE
 	$(OCAMLBUILD) p1/p1_lib.byte
+
+p1.cma: FORCE
+	find p1 -maxdepth 1 -name "*.ml" -exec ln -s \{\} . \;
+	$(OCAMLBUILD) $@
 
 p3_e1: FORCE
 	$(OCAMLBUILD) -Is p1,earley1 p3_e1/p3_lib.byte
@@ -86,6 +118,9 @@ p3_v3: FORCE
 
 p3_v4: FORCE
 	$(OCAMLBUILD) -Is p1,earley3_v4 p3_v4/p3_lib.byte p3_v4/p3_examples.byte p3_v4/p3_gen.native p3.cmxa
+
+p3_v5: FORCE
+	$(OCAMLBUILD) -Is p1,earley3_v5 p3_v5/p3_lib.byte p3_v5/p3_examples.byte p3_v5/p3_gen.native 
 
 
 
@@ -113,7 +148,6 @@ earley3.ml.md: FORCE
 
 earley3.html: earley3.ml.md
 	pandoc -s $< > $@
-
 
 
 

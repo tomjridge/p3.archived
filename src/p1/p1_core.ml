@@ -753,6 +753,24 @@ module ParseGrammar = struct
     ((parse_ws >> (fun _ -> ""))
      ||| ((parse_ws **> parse_comm **> parse_ws) >> (fun _ -> "")))
 
+  (* allow _ in NT *)
+  let parse_AZS =
+    let pred c =
+      ((String.compare "A" c <= 0) && (String.compare c "Z" <= 0))
+      || (String.compare c "_" = 0)
+      || ((String.compare "0" c <=0) && (String.compare c "9" <= 0))
+    in
+    noteps (parse_while pred)
+
+  let parse_azAZs =
+    let pred = fun c ->
+      ((String.compare "A" c <= 0) && (String.compare c "Z" <= 0))
+      || ((String.compare "a" c <= 0) && (String.compare c "z" <= 0))
+      || (String.compare c "_" = 0)
+      || ((String.compare "0" c <=0) && (String.compare c "9" <= 0))
+    in
+    noteps (parse_while pred)
+
   let rec parse_GRAMMAR = fun i ->
     ((parse_RULES **> parse_wscomm **> parse_EOF) >> (fun (rs,(_,_)) -> rs)) i
 
@@ -868,9 +886,12 @@ module ParseGrammar = struct
     let pat = pat1 vars in
     let vars = List.combine vars syms in
     let dquote="\"" in
-    let vars = List.map (fun (v,sym) -> if is_TM sym then "LF("^dquote^(String.escaped(dest_TM sym))^dquote^","^v^")" else v) vars in
+    let _LF = "P1_lib.P1_core.Types.LF" in
+    let _LF = "`LF" in
+    let _NODE = "`NODE" in
+    let vars = List.map (fun (v,sym) -> if is_TM sym then _LF^"("^dquote^(String.escaped(dest_TM sym))^dquote^","^v^")" else v) vars in
     let list_pat = "["^(String.concat ";" vars)^"]" in
-    " fun "^pat^" -> NODE(\""^nt^"\","^list_pat^") ")
+    " fun "^pat^" -> "^_NODE^"(\""^nt^"\","^list_pat^") ")
 
   let mk_pt_actions (h,g) = (
     let f1 (nt,(syms,s)) = (nt,(syms,pt_fun_of_rhs nt syms)) in
