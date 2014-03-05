@@ -97,7 +97,7 @@ module Earley_interface = struct
           (`U4))
       | Some(s) -> (s:uni))
     in
-    let alg = `U0 in 
+(*    let alg = `U0 in *)
 (*    let _ = (match alg with 
       | `U7 -> print_endline "U7"
       | `U6 -> print_endline "U6"
