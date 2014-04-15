@@ -1,17 +1,19 @@
 SHELL=bash
 
 PWD=$(shell pwd)
-BASEDIR=$(PWD)/../../src
-BUILD=$(BASEDIR)/_build
+BUILD=$(PWD)/../../build
+GEN=$(BUILD)/p3_gen.native
+
 # see http://stackoverflow.com/questions/14539899/using-external-libraries-with-ocamlbuild
 OCAMLI_BYTE=-cflags '-I $(BUILD)' -lflags '-I $(BUILD) p3.cma'
 OCAMLI_NATIVE=-cflags '-I $(BUILD)' -lflags '-I $(BUILD) p3.cmxa'
 
-GEN=$(BASEDIR)/p3_gen.native
-
 NATIVES=ocaml_to_latex.native ocaml_to_hol.native
 
-all: $(NATIVES) test
+all: beforeall $(NATIVES) test
+
+beforeall: $(GEN)
+.PHONY:: beforeall
 
 test: $(NATIVES)
 	./ocaml_to_latex.native -f ocaml.txt

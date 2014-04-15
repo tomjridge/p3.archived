@@ -19,6 +19,9 @@ Subdirectories:
 
   * `earley3_v5` - aggressive optimizations to functional version
 
+  * `earley3_v6` - organize optimizations; settle on a standard earley
+    algorithm
+
   * `minip3_v1` - simple version of P3 used for expository purposes
 
   * `minip3_e2` - `minip3_v2` with `earley2`; also uses boxes
@@ -45,3 +48,5 @@ Subdirectories:
   * `p3_v4` - uses `earley3_v4`; `earley3_v4` is currently broken
 
   * `p3_v5` - uses `earley3_v5`
+
+  * `p3_v6` - uses `earley3_v6`

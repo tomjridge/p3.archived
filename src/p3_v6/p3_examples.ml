@@ -11,12 +11,9 @@
 *)
 
 
-open P3_lib
-
 open P1_lib.P1_core.Prelude
 open P1_lib.P1_core.Types
-open P3_lib.P3_core
-open P3_lib.P3_memo
+open P3_lib.P3_everything
 open P3_lib.P3_basic_parsers
 
 (* examples *)

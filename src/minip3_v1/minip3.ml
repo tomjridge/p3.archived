@@ -6,7 +6,7 @@ This code depends on an implementation of Earley parsing from the P3
 library. In the interactive OCaml toplevel, type the following before
 using the rest of the code:
 
-    #mod_use "p3_lib.ml";;
+    #mod_use "mini_p3_lib.ml";;
 *)
 
 let rec itlist f l b =
@@ -305,19 +305,19 @@ type production = item * int
 
 (* the following is boring code to coerce minip3 values to P3 values, so we can use P3_lib.Earley *)
 let p3_of_sym sym = (
-  let module X = P3_lib.Types in
+  let module X = Mini_p3_lib.Types in
   match sym with
   | NT nt -> (X.NT nt)
   | TM tm -> (X.TM tm))
 
 let sym_of_p3 sym = (
-  let module X = P3_lib.Types in
+  let module X = Mini_p3_lib.Types in
   match sym with
   | X.NT nt -> (NT nt)
   | X.TM tm -> (TM tm))
 
 let item_of_p3 itm = (
-  let module X = P3_lib.EarleyTypes in 
+  let module X = Mini_p3_lib.EarleyTypes in 
   {
     nt2=itm.X.nt2;
     a2=(List.map sym_of_p3 itm.X.a2);
@@ -341,7 +341,7 @@ let earley_prods_of_parser p s = (
     let m = grammar_of_parser p in
     let g = earley_grammar_of_grammar m.rules7 in
     let nt = dest_NT (sym_of_parser p) in
-    let open P3_lib.Types in
+    let open Mini_p3_lib.Types in
     {
       g7=g;
       sym7=nt;
@@ -354,9 +354,9 @@ let earley_prods_of_parser p s = (
       string7=s
     })
   in
-  let open P3_lib.EarleyTypes in 
+  let open Mini_p3_lib.EarleyTypes in 
   let s = setup_of_parser p s in
-  let prods = (P3_lib.Earley.earley_full s).prod5 in
+  let prods = (Mini_p3_lib.Earley.earley_full s).prod5 in
   let elts = Set_nt_item_int.elements prods in
   let map = rev_map in
   map (fun (itm,k) -> (item_of_p3 itm,k)) elts)
@@ -371,7 +371,7 @@ let oracle_of_prods ps = (fun (sym1,sym2) -> fun (SS(s,i',j')) ->
   List.map (fun (itm,_) -> itm.j2) ps)
 
 (* alternative, more efficient oracle_of_prods *)
-module Map_sym_sym_int_int = P3_lib.EarleyTypes.MyMap(
+module Map_sym_sym_int_int = Mini_p3_lib.EarleyTypes.MyMap(
   struct
     type key = symbol * symbol * int * int
     type value = int list

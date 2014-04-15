@@ -1,15 +1,7 @@
 (**
-{1 minip3_e2.ml}
+{1 P3_core: core P3 definitions}
 
 {2 Prelude}
-*)
-
-(*
-Interactive use:
-
-    #directory "../earley3_v3";;
-    #mod_use "earley3.ml";;
-
 *)
 
 module Box = struct
@@ -23,15 +15,46 @@ module Box = struct
     let _ = counter := c+1 in
     `Box(c,x))
 
+  let box_even x = (
+    let c = !counter in
+    let c = (if c mod 2=0 then c else c+1) in
+    let _ = counter := c+1 in
+    `Box(c,x))
+
+  let box_odd x =  (
+    let c = !counter in
+    let c = (if c mod 2=1 then c else c+1) in
+    let _ = counter := c+1 in
+    `Box(c,x))
+
   let unbox x = (match x with
-    | `Box(c,x) -> x)
+    | `Box((c:int),x) -> x)
 
   let box_get_key x = (match x with
-    | `Box(c,x) -> c)
+    | `Box((c:int),x) -> c)
 
 end
 
 open Box
+
+(* we want to intern strings *)
+type bstring = string box
+
+module String_map = Map.Make(String)
+
+let interned_strings = ref String_map.empty
+
+(* string -> bstring; even indicates an even box is required *)
+let mk_bstring even s = (
+  let v = try Some(String_map.find s (!interned_strings)) with Not_found -> None in
+  match v with 
+  | Some(x) -> (x:bstring)
+  | None -> (
+    let bs = (if even then box_even else box_odd) s in
+    let _ = interned_strings := (String_map.add s bs (!interned_strings)) in
+    bs))
+
+let _ = mk_bstring true ""
 
 let rec itlist f l b =
   match l with
@@ -103,16 +126,18 @@ let rec concatenate_list ss = (match ss with
       None -> None
   |   Some s2 -> concatenate_two s1 s2)))
 
-type term = string
+type term = bstring
 
-type nonterm = string
+type nonterm = bstring
 
 type symbol = [ `NT of nonterm | `TM of term ]
+let mk_NT s = `NT (mk_bstring true s)
+
 
 let dest_NT sym = (match sym with `NT x -> x | _ -> failwith "dest_NT")
 
-let string_of_tm tm = tm
-let string_of_nt nt = nt
+let string_of_tm (tm:term) = unbox tm
+let string_of_nt (nt:nonterm) = unbox nt
 (*
 let string_of_symbol sym = (match sym with 
   | NT nt -> "NT("^(string_of_nt nt)^")" 
@@ -200,11 +225,11 @@ let sym_of_parser p = (dest_inl (p (Inl ())))
 
 (* we assume that _, * and + cannot appear in user supplied tms and nts *)
 let mk_symbol rhs = (match rhs with
-  | Atom x -> (`NT("_"^(string_of_symbol x))) (* FIXME really? we want to invent a symbol for the lhs *)
+  | Atom x -> (mk_NT("_"^(string_of_symbol x))) (* FIXME really? we want to invent a symbol for the lhs *)
   | Seq(sym1,sym2) -> (
-    `NT ("("^(string_of_symbol sym1)^"*"^(string_of_symbol sym2)^")"))
+    mk_NT ("("^(string_of_symbol sym1)^"*"^(string_of_symbol sym2)^")"))
   | Alt(sym1,sym2) -> (
-    `NT ("("^(string_of_symbol sym1)^"+"^(string_of_symbol sym2)^")")))
+    mk_NT ("("^(string_of_symbol sym1)^"+"^(string_of_symbol sym2)^")")))
 
 let seql p1 p2 = (fun () -> 
   let (f1,_,_) = unsum3 p1 in
@@ -283,7 +308,9 @@ let ( >>>> ) p f = (fun i -> match i with
   | Inr _ -> (Inr (List.map f (dest_inr (p i)))))
 let (_:'a parser3' -> ('a -> 'b) -> 'b parser3') = ( >>>> )
 
-let mkntparser' nt p = (fun i -> match i with
+let mkntparser' s p = (
+  let nt = mk_bstring true s in
+  fun i -> match i with
   | Inl () -> Inl (`NT nt)
   | Inm m -> (
     if List.mem nt (List.map fst m.rules7) then Inm m 
@@ -314,7 +341,9 @@ let mktmparser tm p = (fun i -> match i with
 *)
 
 (* version which reuses results from earley parse *)
-let mktmparser tm p = (fun i -> match i with
+let mktmparser s p = (
+  let tm = mk_bstring false s in
+  fun i -> match i with
   | Inl () -> Inl (`TM tm)
   | Inm m -> (
     if List.mem tm (fmap_dom m.tmparsers7) then Inm m
@@ -358,45 +387,118 @@ let sym_of_p3 sym = sym
 
 let item_of_p3 itm = itm
 
+let earley_grammar_of_grammar g = (
+  let f1 x = (match x with 
+    | Atom (x) -> [[x]]
+    | Seq (x,y) -> [[x;y]]
+    | Alt (x,y) -> [[x];[y]])
+  in
+  let f2 (nt,x) = List.map (fun x -> (nt,x)) (f1 x) in
+  let rs = List.concat (List.map f2 g) in
+  List.map (fun (nt,rhs) -> (nt,List.map p3_of_sym rhs)) rs)
+
+let unbox_sym s = (match s with
+  | `NT nt -> `NT (unbox nt)
+  | `TM tm -> `TM (unbox tm))
+let (_:symbol -> [ `NT of string | `TM of string]) = unbox_sym
+
+let unbox_earley_grammar rs = (
+  let f1 (nt,rhs) = (unbox nt,List.map unbox_sym rhs) in
+  List.map f1 rs)
+
+let integerize_sym sym = (match sym with
+  | `NT nt -> (box_get_key nt)
+  | `TM tm -> (box_get_key tm))
+
+let integerize_earley_grammar rs = (
+  let f1 (nt,rhs) = (box_get_key nt,List.map integerize_sym rhs) in
+  List.map f1 rs)
+
+let integerize_tmparsers7 = (fun tmps -> 
+  let f1 (tm,f) = (box_get_key tm,f) in
+  List.map f1 tmps)
+
+(* old version 
+
+let setup_of_parser p s len = (
+  let m = grammar_of_parser p in
+  let g = earley_grammar_of_grammar m.rules7 in
+  let g = unbox_earley_grammar g in
+  let nt = unbox(dest_NT (sym_of_parser p)) in
+  let p_of_tm =(
+    (* process the tmparsers to enable reasonably fast lookup FIXME enumerating the terminal parsers and using an array would be faster *)
+    (*
+    let tbl = Hashtbl.create 100 in
+    let f1 tbl (s,f) = Hashtbl.add tbl s f; tbl in
+    let _ = List.fold_left f1 tbl m.tmparsers7 in
+    *)
+    fun tm -> 
+      let tm = mk_bstring tm in
+      let p = (* Hashtbl.find tbl tm in *) List.assoc tm m.tmparsers7 in (* FIXME this is awfully inefficient *)
+      fun (s,i,j) -> 
+        let rs = p (SS(s,i,j)) in
+        List.map (fun s1 -> let SS(s',i',j') = s1 in j') rs)
+  in
+  object
+    method g7=g; 
+    method sym7=nt; 
+    method p_of_tm7=p_of_tm; 
+    method string7=s; 
+    method length7=len;
+    method uni7=None;
+  end)
+
+(* FIXME eliminate mapping from strings to ints etc *)
 let oracle_of_parser p s len = (
-  let earley_grammar_of_grammar g = (
-    let f1 x = (match x with 
-      | Atom (x) -> [[x]]
-      | Seq (x,y) -> [[x;y]]
-      | Alt (x,y) -> [[x];[y]])
-    in
-    let f2 (nt,x) = List.map (fun x -> (nt,x)) (f1 x) in
-    let rs = List.concat (List.map f2 g) in
-    List.map (fun (nt,rhs) -> (nt,List.map p3_of_sym rhs)) rs)
-  in
-  let setup_of_parser p s = (
-    let m = grammar_of_parser p in
-    let g = earley_grammar_of_grammar m.rules7 in
-    let nt = dest_NT (sym_of_parser p) in
-    let p_of_tm =(
-        fun tm -> 
-          let p = List.assoc tm m.tmparsers7 in
-          fun (s,i,j) -> 
-            let rs = p (SS(s,i,j)) in
-            List.map (fun s1 -> let SS(s',i',j') = s1 in j') rs)
-    in
-    object
-      method g7=g; 
-      method sym7=nt; 
-      method p_of_tm7=p_of_tm; 
-      method string7=s; 
-      method length7=len;
-      method uni7=None;
-    end)
-  in
-  let s = setup_of_parser p s in
+  let s = setup_of_parser p s len in
   let (o,tmo) = (
     let r = Earley3.Earley_interface.earley_full s in
     let (o,tmo) = (r#oracle,r#tmoracle) in
+    let o = fun (sym1,sym2) -> fun (i,j) -> o (unbox_sym sym1,unbox_sym sym2) (i,j) in
+    let tmo = fun tm (i,j) -> tmo (unbox tm) (i,j) in
     (o,tmo))
   in
   (o,tmo))
 let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_parser
+*)
+
+(* new version *)
+module Std_map_int = E3_mods.Std_map_int
+
+let setup_of_parser p s len = (
+  let m = grammar_of_parser p in
+  let g = earley_grammar_of_grammar m.rules7 in
+  let g = integerize_earley_grammar g in
+  let nt = (* dest_NT *) (integerize_sym (sym_of_parser p)) in
+  let p_of_tm = m.tmparsers7 in
+  let p_of_tm = integerize_tmparsers7 p_of_tm in
+  let p_of_tm = (
+    let f1 m (tm,tmp) = Std_map_int.add tm tmp m in
+    let m = List.fold_left f1 Std_map_int.empty p_of_tm in
+    fun tm -> Std_map_int.find tm m)
+  in
+  let p_of_tm tm (s,i,j) = p_of_tm tm (SS(s,i,j)) in (* adjust input type *)
+  let p_of_tm tm (s,i,j) = p_of_tm tm (s,i,j) |> List.map (fun (SS(s,i,j)) -> j) in (* adjust output type *)  object
+    method g7=g; 
+    method sym7=nt; 
+    method p_of_tm7=p_of_tm; 
+    method string7=s; 
+    method length7=len;
+  end)
+
+(* FIXME eliminate mapping from strings to ints etc *)
+let oracle_of_parser p s len = (
+  let s = setup_of_parser p s len in
+  let r = Earley3.Earley_int_interface.earley_full s in
+  let (o,tmo) = (r#oracle,r#tmoracle) in
+  let (o,tmo) = (
+    let o = fun (sym1,sym2) -> fun (i,j) -> o (integerize_sym sym1,integerize_sym sym2) (i,j) in
+    let tmo = fun tm (i,j) -> tmo (box_get_key tm) (i,j) in
+    (o,tmo))
+  in
+  (o,tmo))
+let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_parser
+
 
 let run_parser3 p s len = (
   let (o,tmo) = oracle_of_parser p s len in
@@ -482,4 +584,3 @@ let check_and_upd_lc4 p = (fun i -> match i with
 
 let mkntparser nt p = (
   check_and_upd_lc4 (mkntparser' nt p))
-

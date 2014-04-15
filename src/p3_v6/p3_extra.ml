@@ -1,28 +1,8 @@
 (**
-{1 p3_extra.ml}
+{1 P3_extra: extra definitions eg memoization, basic parsers}
 {2 P3_memo: various ways to memoize the parser combinators}
 
 *)
-
-(*
-
-Interactive use
-
-    #use "topfind";;
-    #require "unix";;
-
-    #directory "../p1";;
-    #mod_use "p1_terminal_parsers.ml";;
-    #mod_use "p1_core.ml";;
-    #mod_use "p1_everything.ml";;
-    #mod_use "p1_lib.ml";;
-
-    #directory "../earley2";;
-    #mod_use "earley2.ml";;
-    
-    #mod_use "p3_core.ml";;
-*)
-
 
 module P3_memo = struct
 
@@ -114,21 +94,17 @@ FIXME probably we should use the named versions as the FunctorBasicParsers, and 
 
 module P3_basic_parsers = (struct
 
-(*  open Earley.Earley_interface *)
-(*  open P1_lib.P1_core.Prelude  
-  open P1_lib.P1_core.Types
-  open P1_lib.P1_core.Substring *)
   open P1_lib.P1_terminal_parsers.RawParsers
   open P3_core
 
   type 'a parser123 = 'a P3_core.ty_substring P3_core.parser3'
   type parser3'' = string ty_substring parser3'
 
-  let mktmparser = (P3_core.mktmparser:term -> string P3_core.raw_parser -> parser3'')
+  let mktmparser = (P3_core.mktmparser:string -> string P3_core.raw_parser -> parser3'')
 
   let wrap name (p:P1_lib.P1_core.Types.raw_parser) = mktmparser name (fun (SS(s,i,j)) -> List.map (fun ((s,i,j),y) -> SS(s,i,j)) (p (s,i,j)))
 
-  let (_:term -> P1_lib.P1_core.Types.raw_parser -> parser3'') = wrap
+  let (_:string -> P1_lib.P1_core.Types.raw_parser -> parser3'') = wrap
 
   let q1 s = ("\""^s^"\"") (* quote *)
 
@@ -224,7 +200,7 @@ module P3_basic_parsers = (struct
     let _ = () (* print_string ("term_to_parser: treating "^s^" as a literal\n") *) in
     (a (String.sub s 1 (String.length s - 2)))))
 
-  let (_:term -> parser3'') = term_to_parser
+  let (_:string -> parser3'') = term_to_parser
 
 
 end)

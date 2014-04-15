@@ -1,22 +1,36 @@
 SHELL=bash
 
+# require this lib from ocaml std distribution
 COMPILERLIBS=$(shell ocamlc -where)/compiler-libs
 
+CAMLC=ocamlc
+CAMLOPT=ocamlopt
+
 PWD=$(shell pwd)
-BASEDIR=$(PWD)/../../src
-BUILD=$(BASEDIR)/_build
-# see http://stackoverflow.com/questions/14539899/using-external-libraries-with-ocamlbuild
-OCAMLI_BYTE=-cflags '-I $(BUILD) -I $(COMPILERLIBS)' -lflags '-I $(BUILD) p3.cma -I $(COMPILERLIBS) ocamlcommon.cma'
-OCAMLI_NATIVE=-cflags '-I $(BUILD) -I $(COMPILERLIBS)' -lflags '-I $(BUILD) p3.cmxa -I $(COMPILERLIBS) ocamlcommon.cmxa'
+BUILD=$(PWD)/../../build
+GEN=$(BUILD)/p3_gen.native
 
-GEN=$(BASEDIR)/p3_gen.native
+CAMLINCLUDES=-I $(BUILD) p3.cma -I $(COMPILERLIBS) ocamlcommon.cma
+CAMLOPTINCLUDES=-I $(BUILD) p3.cmxa -I $(COMPILERLIBS) ocamlcommon.cmxa
 
-NATIVES=ocamlyacc.native ocaml.native
+NATIVES=ocamlyacc.native ocaml.native ocaml_parser.native
 
-all: $(NATIVES) test
+all: beforeall ocaml_parser.native test
 
-test: $(NATIVES)
-	./ocaml.native -f ../modular_opsem/mod_opsem.ml
+beforeall: $(GEN) $(BUILD)/p3.cmxa $(BUILD)/p3.cma
+
+test: ocaml_parser.native
+	./ocaml_parser.native -f test_ml
+
+ocaml_parser.native: ocaml_parser.cmx
+	$(CAMLOPT) -o $@ unix.cmxa -I +str $(CAMLOPTINCLUDES) $<
+
+ocamlyacc.native: ocamlyacc.cmx
+	$(CAMLOPT) -o $@ -I +str $(CAMLOPTINCLUDES) $<
+
+ocaml.native: ocaml.cmx
+	$(CAMLOPT) -o $@ -I +str $(CAMLOPTINCLUDES) $<
+
 
 ocaml.g: ocamlyacc.native
 	echo '{{ let fIXME = fun x -> failwith "FIXME" }}' >$@
@@ -26,8 +40,6 @@ ocaml.g: ocamlyacc.native
 # in the above line, we may want to just strip out all rules for dealing with errors - this is an ocamlyacc thing; only reduces time from 10.78 to 8.78
 	sed -i -e "/ERROR/d" $@
 
-%.native: %.ml
-	ocamlbuild $(OCAMLI_NATIVE) -lib str $@
 
 ocaml.ml: ocaml.g p3pre.ml p3mid.ml p3post.ml
 	$(GEN) -basedir . -g $< >$@
@@ -35,10 +47,30 @@ ocaml.ml: ocaml.g p3pre.ml p3mid.ml p3post.ml
 %.ml: %.g
 	$(GEN) -g $< >$*.ml
 
+# Default rules
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.ml.cmo:
+	$(CAMLC) $(COMPFLAGS) $(CAMLINCLUDES) -c $<
+
+.mli.cmi:
+	$(CAMLC) $(COMPFLAGS) $(CAMLINCLUDES) -c $<
+
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) $(CAMLOPTINCLUDES) -c $<
+
+depend:
+	ocamldep *.ml *.mli >.depend
+
+include .depend
+
+
+
 clean: FORCE
-	ocamlbuild -clean
-	rm -f ocamlyacc.{cmi,cmx,ml,o,native}
-	rm -f ocaml.{g,ml,native}
+	rm -f *.cm[iox] *.o
+	rm -f $(NATIVES)
+	rm -f ocamlyacc.ml
+	rm -f ocaml.g
 
 .PRECIOUS: %.ml
 

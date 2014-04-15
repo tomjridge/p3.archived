@@ -1,8 +1,8 @@
 SHELL=bash
 
 PWD=$(shell pwd)
-BASEDIR=$(PWD)/../src
-BUILD=$(BASEDIR)/_build
+BUILD=$(PWD)/../build
+
 # see http://stackoverflow.com/questions/14539899/using-external-libraries-with-ocamlbuild
 OCAMLI_BYTE=-cflags '-I $(BUILD)' -lflags '-I $(BUILD) p3.cma'
 OCAMLI_NATIVE=-cflags '-I $(BUILD)' -lflags '-I $(BUILD) p3.cmxa'
@@ -13,7 +13,7 @@ actions: FORCE
 	cd actions && make
 
 grammars: FORCE
-	$(BASEDIR)/earley3_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt
+	$(BUILD)/earley3_main.native -g grammars/E_EEE.g -f inputs/1_0010.txt
 
 lexer: FORCE
 	ocamlbuild -I lexer arith.ml

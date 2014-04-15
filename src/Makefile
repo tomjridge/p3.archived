@@ -129,7 +129,7 @@ export: FORCE
 	-mkdir export
 	find p1 earley2 p3_v2 -maxdepth 1 -name "*.ml" -exec cp \{\} export \;
 
-doc: all_in_one FORCE
+doc: all_in_one_p3v6 FORCE
 	$(OCAMLBUILD) p3.docdir/index.html
 
 earley2.ml.md: FORCE

@@ -31,67 +31,7 @@ Description of various "universes":
 
 open E3_core (* for record fields add etc *)
 
-(* restrict operations *)  
-module type MYSET = sig
-  type elt 
-  type t
-  val add : elt -> t -> t
-  val empty : t
-  val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-  val is_empty : t -> bool
-  val mem : elt -> t -> bool
-  val elements: t -> elt list
-end
-  
-module MySet_Make = functor (Ord:Set.OrderedType) -> (struct
-  include Set.Make(Ord)
-end : MYSET with type elt = Ord.t)  
-
-module Set_int = MySet_Make(
-  struct
-    type t = int
-    let compare (x:int) (y:int) = Pervasives.compare x y
-  end)
-
-let set_int = let open Set_int in {
-  add=add;
-  empty=empty;
-  fold=fold;
-  is_empty=is_empty;
-  mem=mem;
-  elements=elements;
-}
-
-
-module type MYMAP = sig
-  type key
-  type value
-  type ty_map
-  val empty : ty_map
-  val add : key -> value -> ty_map -> ty_map
-  val find2 : key -> ty_map -> value
-  val bindings : ty_map -> (key * value) list
-end
-
-(* argument to Map functor *)
-module type MAPINPUT = sig
-    type key
-    type value
-    val compare : key -> key -> int
-    val default: value
-end
-
-module MyMap = functor (MapInput:MAPINPUT) -> (struct
-  module Ord = struct
-      type t = MapInput.key
-      let compare = MapInput.compare
-  end
-  include Map.Make(Ord)
-  type value=MapInput.value
-  type ty_map=MapInput.value t
-  let find2 k m =
-    if (mem k m) then (find k m) else MapInput.default
-end : (MYMAP with type key = MapInput.key and type value = MapInput.value))
+open E3_mods
 
 
 let rec itlist f l b =
@@ -291,9 +231,16 @@ module U0 = struct
     let hd_b2 x = (match x.v8 with
         U0_pre_nt_item(nt,xs,ys) -> List.hd ys)
     in
-    let nt_items_for_nt nt i = (
-      let rs = List.filter (fun (nt',rhs) -> (nt' = nt)) g in
-      List.map (fun (nt,rhs) -> {v8=(U0_pre_nt_item(nt,[],rhs)); i8=i; j8=i}) rs)
+    let nt_items_for_nt = (
+      let f1 m (U0_nt nt,rhs) = (
+        let rs = try Std_map_string.find nt m with Not_found -> [] in
+        let m = Std_map_string.add nt ((U0_nt nt,rhs)::rs) m in
+        m)
+      in
+      let m = List.fold_left f1 Std_map_string.empty g in
+      fun (U0_nt nt) i -> (
+        let rs = try Std_map_string.find nt m with Not_found -> [] in
+        List.map (fun (nt,rhs) -> {v8=(U0_pre_nt_item(nt,[],rhs)); i8=i; j8=i}) rs))
     in
     let (_:nt->int->nt_item list) = nt_items_for_nt in
     let mk_item = (fun x -> match x with 
