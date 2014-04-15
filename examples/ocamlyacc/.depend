@@ -1,0 +1,17 @@
+interactive.cmo :
+interactive.cmx :
+ocaml.cmo : ocaml.cmi
+ocaml.cmx : ocaml.cmi
+ocaml_parser.cmo : ocaml_parser.cmi
+ocaml_parser.cmx : ocaml_parser.cmi
+ocamlyacc.cmo : ocamlyacc.cmi
+ocamlyacc.cmx : ocamlyacc.cmi
+p3mid.cmo :
+p3mid.cmx :
+p3post.cmo :
+p3post.cmx :
+p3pre.cmo :
+p3pre.cmx :
+ocaml.cmi :
+ocaml_parser.cmi :
+ocamlyacc.cmi :
