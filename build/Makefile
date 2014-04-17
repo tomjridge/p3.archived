@@ -15,7 +15,7 @@ P1=p1_terminal_parsers.cmo p1_core.cmo p1_everything.cmo p1_lib.cmo
 E3=e3_core.cmo e3_mods.cmo e3_std.cmo e3_uni.cmo e3_dispatch.cmo earley3.cmo
 P3=p3_core.cmo p3_extra.cmo p3_everything.cmo p3_lib.cmo
 MINIP3=mini_p3_lib.cmo minip3.cmo
-CMO=$(P1) $(E3) $(P3) $(MINIP3)
+CMO=$(P1) $(E3) $(P3)
 
 # natives which depend on p3.cmxa
 NATIVES=earley3_main.native g2g.native p3_gen.native 

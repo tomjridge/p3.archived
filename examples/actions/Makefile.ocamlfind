@@ -1,10 +1,10 @@
 # this Makefile shows how to build the examples if using
-# opam/ocamlfind; type make -f Makefile.opam to use this Makefile
+# ocamlfind; type make -f Makefile.ocamlfind to use this Makefile
 SHELL=bash
 
 # require that p3 has been installed via opam, p3gen.native is
 # available and p3.cmxa is accessible via ocamlfind
-GEN=p3_gen
+GEN=../../build/p3_gen.native
 
 all: test
 
