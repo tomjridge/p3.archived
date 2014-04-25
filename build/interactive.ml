@@ -21,6 +21,10 @@
 #mod_use "p3_lib.ml";;
 
 
+Or, if the library is available:
+
+#load "p3.cma";;
+
 
 
 

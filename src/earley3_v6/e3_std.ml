@@ -483,14 +483,14 @@ let earley_full setup0 = (
   let init_items = List.map (fun x -> `NTITM x) (nt_items_for_nt setup0#std_sym 0) in
   let len = setup0#std_length in
   let max_len_for_arrays=10000 in
-  let functional_ctxt = { string5=setup0#std_string; length5=len; p_of_tm5=setup0#std_p_of_tm; item_ops5=mk_ops nt_items_for_nt; sets=Sets_maps.sets; maps=Sets_maps.maps } in
-  let imperative_ctxt = { string5=setup0#std_string; length5=len; p_of_tm5=setup0#std_p_of_tm; item_ops5=mk_ops nt_items_for_nt; sets=Sets_maps_imp.sets (len+1); maps=Sets_maps_imp.maps (len+1) } in
   if len < max_len_for_arrays then (
+    let imperative_ctxt = { string5=setup0#std_string; length5=len; p_of_tm5=setup0#std_p_of_tm; item_ops5=mk_ops nt_items_for_nt; sets=Sets_maps_imp.sets (len+1); maps=Sets_maps_imp.maps (len+1) } in
     let ctxt =  imperative_ctxt in
     let init_state = mk_init_loop2 ctxt init_items in
     let s = E3_core.earley ctxt init_state in
     post_process (s,ctxt))
   else (
+    let functional_ctxt = { string5=setup0#std_string; length5=len; p_of_tm5=setup0#std_p_of_tm; item_ops5=mk_ops nt_items_for_nt; sets=Sets_maps.sets; maps=Sets_maps.maps } in
     let ctxt =  functional_ctxt in
     let init_state = mk_init_loop2 ctxt init_items in
     let s = E3_core.earley ctxt init_state in
