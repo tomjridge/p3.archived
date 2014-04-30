@@ -25,7 +25,9 @@ Or, if the library is available:
 
 #load "p3.cma";;
 
+Examples:
 
+#mod_use "p3_examples.ml";;
 
 
 *)

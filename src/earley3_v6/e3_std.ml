@@ -433,6 +433,7 @@ let memo tbl f k = (
     v)
 *)
 
+(* FIXME better use an array *)
 let mk_nt_items_for_nt g = (
   let tbl = Hashtbl.create 100 in
   let f0 = (fun (nt,rhs) -> (nt,[],rhs,0,0)) in

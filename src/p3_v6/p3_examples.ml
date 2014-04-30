@@ -219,3 +219,63 @@ let rec parse_E =
 
 *)
 
+
+
+
+(* an alternative approach, following
+   http://stackoverflow.com/questions/14454981/memoization-in-ocaml ;
+   a recursive parser takes an extra argument representing its
+   completion ; the problem with this approach is that with many
+   mutually recursive functions, the self argument presumably has to
+   become many self arguments (one for each
+   mutually-recursively-defined parser), which is ugly, unreadable and
+   not scalable *)
+
+let mkntparser_rec f = (
+  let s = gen_string() in
+  let rec g = (fun i -> mkntparser s (f g) i) in
+  g)
+
+let parse_E self = (
+  ((self ***> self ***> self) >>>> (fun (x,(y,z)) -> x+y+z))
+  |||| parse_1
+  |||| parse_eps)
+
+let p = mkntparser_rec parse_E
+let _ = p3_run_parser_string p "11111"
+
+
+
+(* another approach, via laziness *)
+
+(* version using laziness; roll gen_string into mkntparser *)
+let mkntparser_lazy = mkntparser (gen_string())
+
+let rec parse_E = lazy (mkntparser_lazy (fun i -> (
+  ((Lazy.force parse_E ***> Lazy.force parse_E ***> Lazy.force parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
+  |||| parse_1
+  |||| parse_eps) i))
+
+let p = Lazy.force parse_E
+let _ = grammar_of_parser p
+let _ = p3_run_parser_string p "11111"
+
+
+
+
+(* another variation, removes the eta expansion on the argument to
+   mkntparser_lazy; this is possibly a reasonable interface for OCaml;
+   but note that the use of lazy cannot be hidden in the API, however
+   the combinators could be defined to take lazy values, so that the
+   let p_E... line could presumably be removed *)
+let rec parse_E = lazy (mkntparser_lazy (
+  let p_E = fun i -> Lazy.force parse_E i in
+  ((p_E ***> p_E ***> p_E) >>>> (fun (x,(y,z)) -> x+y+z))
+  |||| parse_1
+  |||| parse_eps))
+
+let p = Lazy.force parse_E
+let _ = grammar_of_parser p
+let _ = p3_run_parser_string p "11111"
+
+

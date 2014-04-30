@@ -1,8 +1,8 @@
 module Earley_int_interface = struct
 
   (* input types *)
-  type term = int (* assumed even *)
-  type nonterm = int (* odd *)
+  type term = int (* assumed odd *)
+  type nonterm = int (* even *)
   type 'a substring = 'a * int * int
   type symbol = int
 

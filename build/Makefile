@@ -15,10 +15,10 @@ P3=p3_core.cmo p3_extra.cmo p3_everything.cmo p3_lib.cmo
 MINIP3=mini_p3_lib.cmo minip3.cmo
 CMO=$(P1) $(E3) $(P3) # don't add MINIP3 - keep this separate
 
-# natives which depend on p3.cmxa
-NATIVES=earley3_main.native g2g.native p3_gen.native 
+# natives which depend on p3.cmxa; doesn't include minip3.native which depends on mini_p3_lib
+NATIVES=e3_examples.native p3_examples.native earley3_main.native g2g.native p3_gen.native 
 
-all: p3_examples.cmo p3.cma p3.cmxa $(NATIVES) minip3.native
+all: p3.cma p3.cmxa $(NATIVES) minip3.native
 
 p3.cma: $(CMO)
 	$(CAMLC) -a -o $@ $(CMO)

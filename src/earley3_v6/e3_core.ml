@@ -333,7 +333,7 @@ let loop2 ctxt s0 = (
       let citm = ops.mk_sym_coord (ops.nt2 nitm, ops.nt_dot_i9 nitm, ops.nt_dot_j9 nitm) in
       let k = (ops.sym_dot_i9 citm (* FIXME could be from dot_i9 nitm *),ops.sym6 citm) in
       (* FIXME check whether citm has already been done? *)
-      let citms = ctxt.maps.map_complete_key.find2 k s0.complete5 in
+      let citms = ctxt.maps.map_complete_key.find2 k s0.complete5 in 
       match false (* ctxt.sets.set_sym_item.mem citm citms *) with (* FIXME this optimization didn't buy much *)
       | true -> s0
       | false -> (
@@ -412,5 +412,6 @@ let loop2 ctxt s0 = (
 
 let (_:unit -> YY.ty_x_loop2 -> YY.ty_x_loop2) = (fun () -> loop2 YY.x_ctxt)
 
+(* if porting to an imperative language, use a while loop for the following *)
 let rec earley ctxt s0 = (if todo_is_empty s0 then s0 else (earley ctxt (loop2 ctxt s0)))
 
