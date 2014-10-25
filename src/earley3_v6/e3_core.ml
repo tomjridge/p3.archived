@@ -46,7 +46,7 @@ type 'a ty_ops = {
   sym_of_tm      : 'tm -> 'sym;
   mk_tm_coord    : ('tm * int) -> 'tm_item; (* need map tm -> i *)
   tm5            : 'tm_item -> 'tm; (* ignoring i,j, this is the only info in a tm_coord *) (* no-op - repn tm_coord by tm, which is an int for us FIXME no this is a map to tm, not to int - this only works if we have an injective map from syms to ints, which we do have! *)
-  mk_sym_coord   : ('sym * int * int) -> 'sym_item; (* if syms are ints, no-op, providing we use {i|i repn symb} as the repn of items with a given sym *)
+  mk_sym_coord   : ('sym * int * int) -> 'sym_item; (* if syms are ints, no-op, providing we use {i |i repn symb} as the repn of items with a given sym *)
   sym6           : 'sym_item -> 'sym; (* ignoring i,j, this is the only info in a sym_coord *) (* repn i->sym *)
   nt2            : 'nt_item -> 'sym;  (* repn i->sym *)
   shift_a2_b2_c2 : 'nt_item -> 'nt_item; (* repn i->i *)
