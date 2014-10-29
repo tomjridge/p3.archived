@@ -29,8 +29,9 @@ opam install ${OPAM_DEPENDS}
 eval `opam config env`
 make
 # make test
-# FIXME what does this do? makes opam use this particular p3?
-opam pin p3 .
+# FIXME what does this do? makes opam use this particular version?
+# can only pin packages known to opam
+# opam pin p1 .
 
 # case $OCAML_VERSION in
 # 3.12.*) ;;
