@@ -1,12 +1,13 @@
 # nix-build default.nix -A p3
 # nix-shell default.nix -A p3
+# nix-shell default.nix -A post_install
 let 
     pkgs = import <nixpkgs> {};
     stdenv = pkgs.stdenv;
     fetchgit = pkgs.fetchgit;
     ocaml = pkgs.ocaml_4_02_1;
     findlib = pkgs.ocamlPackages_4_02_1.findlib;
-in {
+in rec {
 
   p3 = stdenv.mkDerivation {
     name = "p3";
@@ -25,4 +26,13 @@ in {
     createFindlibDestdir = true;
 
   };
+
+  # get a nix-shell environment with p3 installed via ocamlfind
+  post_install = stdenv.mkDerivation {
+    name = "post_install";
+  
+    buildInputs = [ ocaml findlib p3 ];
+
+  };
+
 }
