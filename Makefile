@@ -1,16 +1,18 @@
 all:
-	cd build && make
-	cd examples && make
+	cd build && $(MAKE)
+	cd examples && $(MAKE)
 
 clean:
-	cd build && make clean
-	cd examples && make clean
+	cd build && $(MAKE) clean
+	cd examples && $(MAKE) clean
 
 
 # ocamlfind, opam etc
 
+install: ocamlfind_install
+
 ocamlfind_install:
-	cd build && make
+	cd build && $(MAKE)
 	ocamlfind install p3 META build/*.cmi  build/p3.cma build/p3.cmxa build/p3.a
 
 ocamlfind_remove:
