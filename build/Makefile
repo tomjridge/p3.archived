@@ -1,66 +1,31 @@
-SHELL=bash
+SHELL:=bash
 
-CAMLC=$(shell command -v ocamlc.opt || command -v ocamlc || echo missing_ocamlc)
-CAMLOPT=$(shell command -v ocamlopt.opt || command -v ocamlopt || echo missing_ocamlopt)
-CAMLDEP=$(shell command -v ocamldep.opt || command -v ocamldep || echo missing_ocamldep) -one-line
-OCAMLDOC=$(shell command -v ocamldoc.opt || command -v ocamldoc || echo missing_ocamldoc)
+include ../Makefile.common
 
-# FIXME probably want to look at warning 8 a bit more closely
-WARNINGS=-w -26-8
-COMPFLAGS=$(WARNINGS)
+CAMLCINCLUDES:=-package str $(E3_PKG)
+CAMLOPTINCLUDES:=-package str $(E3_PKG:.cma=.cmxa)
+COMPFLAGS:=-w -8 -w -23
 
-P1=p1_terminal_parsers.cmo p1_core.cmo p1_everything.cmo p1_lib.cmo
-E3=e3_core.cmo e3_mods.cmo e3_std.cmo e3_uni.cmo e3_dispatch.cmo earley3.cmo
-P3=p3_core.cmo p3_extra.cmo p3_everything.cmo p3_lib.cmo
-MINIP3=mini_p3_lib.cmo minip3.cmo
-CMO=$(P1) $(E3) $(P3) # don't add MINIP3 - keep this separate
+MLS:=$(filter-out interactive.ml, $(shell ocamlfind ocamldep -sort *.ml *.mli))
+SRC_DIR:=../src
 
-# natives which depend on p3.cmxa; doesn't include minip3.native which depends on mini_p3_lib
-NATIVES=e3_examples.native p3_examples.native earley3_main.native g2g.native p3_gen.native 
-
-all: p3.cma p3.cmxa $(NATIVES) minip3.native
-
-p3.cma: $(CMO)
-	$(CAMLC) -a -o $@ $(CMO)
-
-p3.cmxa: $(CMO:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(CMO:.cmo=.cmx)
-
-minip3.native: mini_p3_lib.cmx minip3.cmx 
-	$(CAMLOPT) $(COMPFLAGS) -o $@ mini_p3_lib.cmx minip3.cmx
-
-$(NATIVES): %.native: %.ml p3.cmxa
-	$(CAMLOPT) $(COMPFLAGS) -o $@ p3.cmxa $<
-
-# FIXME not used?
-e3_std.mli: e3_std.ml
-	$(CAMLC) -i $<
-
-# Default rules
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-.mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-.ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+MLS_TO_EXEC:=p3_examples.ml # executables
+IGNORE_FOR_LIB:=$(MLS_TO_EXEC) interactive.ml # don't want these in the lib
+MLS_FOR_LIB:=$(filter-out $(IGNORE_FOR_LIB), $(MLS)) # p1_examples.ml is an executable
+LIB:=p3
 
 
-doc: $(P3)
-	$(OCAMLDOC) -html $(P3:.cmo=.ml)
+all: before_all
+	$(MAKE) cmo cmx
+	$(MAKE) $(LIB).cma $(LIB).cmxa $(MLS_TO_EXEC:.ml=.native)
+
+# ../src_ext/e3/build/e3.cma ../src_ext/e3/build/e3.cmxa:
+# 	cd ../src_ext/e3/build && make
 
 
-depend:
-	$(CAMLDEP) $(INCLUDES) *.mli *.ml >.depend
-
-include .depend
+include Makefile.include
 
 
+clean: before_clean
+	rm -rf ocamldoc orebuild.exe pending.ml.todo
 
-clean:
-	rm -f *.cm[iox]
-	rm -f *.cma *.cmxa *.a *.o *.cmi *.native
-	rm -f *.{html,css}

@@ -1,5 +1,0 @@
-this is (* a comment *) and more text
-
-this is a (* nested (* comment *) *) and more text
-
-and (* another (* *) (* *) comment *) here

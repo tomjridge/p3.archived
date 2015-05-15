@@ -1,0 +1,43 @@
+CAMLC:=ocamlfind ocamlc
+CAMLOPT:=ocamlfind ocamlopt
+
+CAMLDEP:=ocamlfind ocamldep -one-line
+#OREBUILD:=./orebuild
+OCAMLDOC:=ocamlfind ocamldoc
+
+COMPFLAGS?=# maybe set some additional compilation options
+
+
+before_all: link .depend
+
+link: $(SRC_DIR)
+	find $(SRC_DIR) -maxdepth 1 -type f -exec ln -sf \{\} . \;
+
+.depend:
+	$(CAMLDEP) *.mli *.ml >.depend
+
+
+# this compiles all .ml and .mli files not just $(CMO)
+cmo: $(MLS)
+#	echo The following command will be run: $(CAMLC) $(CAMLCINCLUDES) $(COMPFLAGS) -c `$(OREBUILD) .depend $?`
+	$(CAMLC) $(CAMLCINCLUDES) $(COMPFLAGS) -c $(MLS)
+	touch cmo
+
+
+cmx: $(MLS) 
+	$(CAMLOPT) $(COMPFLAGS) $(CAMLOPTINCLUDES) -c $(MLS)
+	touch cmx
+
+
+$(LIB).cma: $(MLS_FOR_LIB:.ml=.cmo)
+	$(CAMLC) $(COMPFLAGS) -a -o $@ $(MLS_FOR_LIB:.ml=.cmo)
+
+$(LIB).cmxa: $(MLS_FOR_LIB:.ml=.cmx)
+	$(CAMLOPT) $(COMPFLAGS) -a -o $@ $(MLS_FOR_LIB:.ml=.cmx)
+
+$(MLS_TO_EXEC:.ml=.native): %.native: %.ml $(LIB).cmxa
+	$(CAMLOPT) $(COMPFLAGS) $(CAMLOPTINCLUDES) -linkpkg -o $@ $(LIB).cmxa $<
+
+before_clean:
+	rm -f *.ml *.mli *.cmo *.cmi *.cmx *.native *.a *.o *.cma *.cmxa .depend cmo cmx orebuild.exe
+	rm -rf ocamldoc 
