@@ -4,7 +4,7 @@ all:
 
 clean:
 	cd build && $(MAKE) clean
-	cd examples && $(MAKE) clean
+#	cd examples && $(MAKE) clean
 
 
 # ocamlfind, opam etc
