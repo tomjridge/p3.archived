@@ -223,6 +223,8 @@ type 'a parser3' = (string,'a) parser3
 
 let sym_of_parser p = (dest_inl (p (Inl ())))
 
+let (_:('a,'b)parser3 -> symbol) = sym_of_parser
+
 (* we assume that _, * and + cannot appear in user supplied tms and nts *)
 let mk_symbol rhs = (match rhs with
   | Atom x -> (mk_NT("_"^(string_of_symbol x))) (* FIXME really? we want to invent a symbol for the lhs *)
@@ -356,7 +358,11 @@ let mktmparser s p = (
     else
       Inr[]))
 
+let (_:string -> 'a raw_parser -> ('a,'a ty_substring) parser3) = mktmparser
+
 let grammar_of_parser p = (dest_inm (p (Inm empty_mid)))
+
+let (_:('a,'b)parser3 -> 'a outm) = grammar_of_parser
 
 let run_parser3' (o,tmo) p s len = (
   let i0 = { 
@@ -368,6 +374,87 @@ let run_parser3' (o,tmo) p s len = (
   in
   let rs = dest_inr (p (Inr i0)) in
   unique rs)
+let (_:ty_oracle * ty_tmoracle -> ('string,'a) parser3 -> 'string -> int -> 'a list) = run_parser3'
+
+(**
+{2 Context definitions}
+*)
+
+
+(* memoization works best if contexts are represented using sorted lists *)
+(*
+let lc_cmp (nt1,SS(s1,i1,j1)) (nt2,SS(s2,i2,j2)) = (
+  Pervasives.compare (nt1,(i1,j1)) (nt2,(i2,j2)))
+*)
+
+let lc_cmp (nt1,ss1) (nt2,ss2) = (
+  Pervasives.compare (nt1,ss1) (nt2,ss2))
+
+(* this version is equivalent to the previous if we use normalized contexts *)
+(*
+let lc_cmp (nt1,ss1) (nt2,ss2) = (
+  if ss1 <> ss2 then failwith "lc_cmp: impossible" 
+  else Pervasives.compare nt1 nt2)
+*)
+
+(* when parsing the input between l and h, the only part of the
+ context that matters are those entries (nt,(l',h')) st (l',h') =
+ (l,h); so there is a notion of a normalized context (important
+ for memoization) *)
+
+(* memoization works best if contexts are normalized *)
+(*
+let normalize_context (LC(lc)) (SS(s,i,j)) = (
+  LC(List.filter (fun (nt,SS(s',i',j')) -> (i',j')=(i,j)) lc))
+*)
+
+let normalize_context i0 (LC(lc)) (SS(s,l,h)) = (
+  let SS(s,l,h) = SS(box_get_key i0.box4,l,h) in
+  LC(List.filter (fun (nt,ss') -> ss'=SS(s,l,h)) lc))
+
+(* for contexts, we work with substrings whose values are ints *)
+let update_context i0 c (nt,SS(s,l,h)) = (
+  let LC(lc) = normalize_context i0 c (SS(s,l,h)) in
+  let SS(s,l,h) = SS(box_get_key i0.box4,l,h) in
+  LC(myinsert lc_cmp (nt,SS(s,l,h)) lc))
+
+(* simpler definition; don't need lc_cmp, normalize_context and previous update_context
+
+let update_context (LC(lc)) (nt,SS(s,l,h)) = (
+  LC((nt,SS(s,l,h))::lc))
+
+*)
+
+(*
+let context_contains (LC(lc)) (nt,SS(s,l,h)) = (
+  List.exists (fun (nt',SS(_,i',j')) -> (nt,i',j') = (nt,l,h)) lc)
+*)
+
+let context_contains i0 (LC(lc)) (nt,SS(s,l,h)) = (
+  let SS(s,l,h) = SS(box_get_key i0.box4,l,h) in
+  List.exists (fun (nt',ss') -> (nt',ss') = (nt,SS(s,l,h))) lc)
+
+let update_lc4 nt p = (fun i -> match i with
+  | Inr i0 -> p (Inr { 
+    i0 with lc4=(update_context i0 i0.lc4 (nt,i0.ss4)) })
+  | _ -> p i)
+
+let check_and_upd_lc4 p = (fun i -> match i with 
+  | Inr i -> (
+    let (f,g,h) = unsum3 p in
+    let nt = dest_NT (sym_of_parser p) in
+    let should_trim = context_contains i i.lc4 (nt,i.ss4) in
+    if should_trim then 
+      Inr []
+    else
+      update_lc4 nt p (Inr i))
+  | _ -> p i)
+
+let mkntparser nt p = (
+  check_and_upd_lc4 (mkntparser' nt p))
+
+let (_:string -> ('a,'b) parser3 -> ('a,'b) parser3) = mkntparser
+
 
 (**
 {2 Earley parsing}
@@ -463,7 +550,8 @@ let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_pa
 *)
 
 (* new version *)
-module Std_map_int = E3_mods.Std_map_int
+module Std_map_int = Map.Make(struct type t = int let compare : int -> int -> int = compare end)
+
 
 let setup_of_parser p s len = (
   let m = grammar_of_parser p in
@@ -486,17 +574,34 @@ let setup_of_parser p s len = (
     method length7=len;
   end)
 
+let (_:('string,'a)parser3 -> 'string -> int -> 
+  < g7: (int * int list) list;
+    length7: int;
+    p_of_tm7: int -> 'string * int * int -> int list;
+    string7: string;
+    sym7: int>) = setup_of_parser
+
+
 (* FIXME eliminate mapping from strings to ints etc *)
 let oracle_of_parser p s len = (
   let s = setup_of_parser p s len in
-  let r = Earley3.Earley_int_interface.earley_full s in
-  let (o,tmo) = (r#oracle,r#tmoracle) in
+  let open E3_simple in
+  let ps = {
+    nt_items_for_nt=(fun nt -> fun (_,_,i) -> 
+        (s#g7) 
+        |> List.filter (fun (nt',rhs) -> nt = nt')  (* FIXME very inefficient - just to get things working *)
+        |> List.map (fun (nt,rhs) -> (nt,[],rhs,i,i)));
+    p_of_tm=s#p_of_tm7 }
+  in
+  let r = E3_simple.earley ps (s#sym7) (s#string7) (s#length7) in
+  let (o,tmo) = r in
   let (o,tmo) = (
-    let o = fun (sym1,sym2) -> fun (i,j) -> o (integerize_sym sym1,integerize_sym sym2) (i,j) in
+    let o = fun (sym1,sym2) -> fun (i,j) -> o ([integerize_sym sym1],integerize_sym sym2) (i,j) in
     let tmo = fun tm (i,j) -> tmo (box_get_key tm) (i,j) in
     (o,tmo))
   in
   (o,tmo))
+
 let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_parser
 
 
@@ -508,82 +613,29 @@ let p3_run_parser = run_parser3
 
 let p3_run_parser_string p s = run_parser3 p s (String.length s) (* FIXME remove run_parser3 in favour of p3_run_parser *)
 
-(**
-{2 Context definitions}
-*)
+let (_:('a,'b)parser3 -> 'a -> 'b list) = p3_run_parser_string
 
 
-(* memoization works best if contexts are represented using sorted lists *)
-(*
-let lc_cmp (nt1,SS(s1,i1,j1)) (nt2,SS(s2,i2,j2)) = (
-  Pervasives.compare (nt1,(i1,j1)) (nt2,(i2,j2)))
-*)
+let parse_1 = 
+  mktmparser "1"
+    (fun (SS(s,i,j)) -> if i < j && s.[i]='1' then [SS(s,i,i+1)] else [])
+let parse_1 = parse_1 >>>> (fun _ -> 1)
 
-let lc_cmp (nt1,ss1) (nt2,ss2) = (
-  Pervasives.compare (nt1,ss1) (nt2,ss2))
+let parse_eps = 
+  mktmparser "eps"
+    (fun (SS(s,i,j)) -> if i <= j then [SS(s,i,i)] else [])
+let parse_eps = parse_eps >>>> (fun _ -> 0)
+  
+(* example with no memoization *)
+(* right associative ***> *)
+let rec parse_E = (fun i -> (mkntparser "E" (
+  ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
+  |||| parse_1
+  |||| parse_eps))
+  i)
 
-(* this version is equivalent to the previous if we use normalized contexts *)
-(*
-let lc_cmp (nt1,ss1) (nt2,ss2) = (
-  if ss1 <> ss2 then failwith "lc_cmp: impossible" 
-  else Pervasives.compare nt1 nt2)
-*)
+let (_:('string,int)parser3) = parse_E
 
-(* when parsing the input between l and h, the only part of the
- context that matters are those entries (nt,(l',h')) st (l',h') =
- (l,h); so there is a notion of a normalized context (important
- for memoization) *)
-
-(* memoization works best if contexts are normalized *)
-(*
-let normalize_context (LC(lc)) (SS(s,i,j)) = (
-  LC(List.filter (fun (nt,SS(s',i',j')) -> (i',j')=(i,j)) lc))
-*)
-
-let normalize_context i0 (LC(lc)) (SS(s,l,h)) = (
-  let SS(s,l,h) = SS(box_get_key i0.box4,l,h) in
-  LC(List.filter (fun (nt,ss') -> ss'=SS(s,l,h)) lc))
-
-(* for contexts, we work with substrings whose values are ints *)
-let update_context i0 c (nt,SS(s,l,h)) = (
-  let LC(lc) = normalize_context i0 c (SS(s,l,h)) in
-  let SS(s,l,h) = SS(box_get_key i0.box4,l,h) in
-  LC(myinsert lc_cmp (nt,SS(s,l,h)) lc))
-
-(* simpler definition; don't need lc_cmp, normalize_context and previous update_context
-
-let update_context (LC(lc)) (nt,SS(s,l,h)) = (
-  LC((nt,SS(s,l,h))::lc))
-
-*)
-
-(*
-let context_contains (LC(lc)) (nt,SS(s,l,h)) = (
-  List.exists (fun (nt',SS(_,i',j')) -> (nt,i',j') = (nt,l,h)) lc)
-*)
-
-let context_contains i0 (LC(lc)) (nt,SS(s,l,h)) = (
-  let SS(s,l,h) = SS(box_get_key i0.box4,l,h) in
-  List.exists (fun (nt',ss') -> (nt',ss') = (nt,SS(s,l,h))) lc)
-
-let update_lc4 nt p = (fun i -> match i with
-  | Inr i0 -> p (Inr { 
-    i0 with lc4=(update_context i0 i0.lc4 (nt,i0.ss4)) })
-  | _ -> p i)
-
-let check_and_upd_lc4 p = (fun i -> match i with 
-  | Inr i -> (
-    let (f,g,h) = unsum3 p in
-    let nt = dest_NT (sym_of_parser p) in
-    let should_trim = context_contains i i.lc4 (nt,i.ss4) in
-    if should_trim then 
-      Inr []
-    else
-      update_lc4 nt p (Inr i))
-  | _ -> p i)
-
-let mkntparser nt p = (
-  check_and_upd_lc4 (mkntparser' nt p))
-
-
-
+let p = parse_E
+let s = "11111"
+let len = 5

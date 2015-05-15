@@ -1,13 +1,35 @@
-(**
-{1 P3_lib: access all P3 functionality via this module}
+type 'a ty_substring = 'a P3_core.ty_substring
 
-*)
+type term = P3_core.term
+type nonterm = P3_core.nonterm
+type symbol = P3_core.symbol
 
-module P3_core = P3_core
+type 'string input = 'string P3_core.input
 
-module P3_memo = P3_extra.P3_memo
+type ('string,'a) output = ('string,'a) P3_core.output
 
-module P3_basic_parsers = P3_extra.P3_basic_parsers
+type ('string,'a) parser3 = ('string,'a) P3_core.parser3
 
-module P3_everything = P3_everything
+let ( ***> ) = P3_core.( ***> )
 
+let ( |||| ) = P3_core.( |||| )
+
+let ( >>>> ) = P3_core.( >>>> )
+
+let a = P3_extra.P3_basic_parsers.a
+
+let mkntparser = P3_core.mkntparser
+
+type 'a outm = 'a P3_core.outm
+
+let grammar_of_parser = P3_core.grammar_of_parser
+
+let p3_run_parser_string = P3_core.p3_run_parser_string
+
+type 'a local_context = 'a P3_core.local_context
+
+let memo_p3 = P3_extra.P3_memo.memo_p3
+
+let string_of_symbol = P3_core.string_of_symbol
+
+let sym_of_parser = P3_core.sym_of_parser

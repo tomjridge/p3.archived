@@ -4,10 +4,7 @@
 *)
 
 
-open P1_lib.P1_core.Prelude
-open P1_lib.P1_core.Types
-open P3_lib.P3_everything
-open P3_lib.P3_basic_parsers
+open P3_lib
 
 (* examples *)
 let parse_1 = (a "1") >>>> (fun _ -> 1)
@@ -31,7 +28,7 @@ let _ = assert([6] = p3_run_parser_string p txt)
 
 
 (* example with explicit memoization *)
-let tbl_E = MyHashtbl.create 100 
+let tbl_E = Hashtbl.create 100 
 let rec parse_E = (fun i -> memo_p3 tbl_E (mkntparser "E" (
   ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
   |||| parse_1
@@ -65,6 +62,7 @@ let _ = p3_run_parser_string p txt
 
 
 (* example with implicit memoization via memo_rec2 *)
+(*
 let parse_E = memo_rec2 (fun self -> (mkntparser "E" (
   ((self ***> self ***> self) >>>> (fun (x,(y,z)) -> x+y+z))
   |||| parse_1
@@ -73,7 +71,7 @@ let parse_E = memo_rec2 (fun self -> (mkntparser "E" (
 let p = parse_E
 let txt = "111111111111111111111111111111"
 let _ = assert([30] = p3_run_parser_string p txt)
-
+*)
 
 
 
@@ -97,7 +95,7 @@ let rec itern n p = (
   if n = 0 then parse_eps >>>> (fun _ -> [])
   else (p ***> (itern (n-1) p)) >>>> (fun (x,xs) -> x::xs))
 
-let _ = sym_of_parser (itern 5 parse_1)
+(* let _ = sym_of_parser (itern 5 parse_1) *)
 let _ = grammar_of_parser (itern 5 parse_1)
 
 let p = itern 5 parse_1
@@ -164,8 +162,8 @@ let _ = assert([[1;1;1;1]] = p3_run_parser_string p "[1;1;1;1]")
 (* example with gen_string *)
 
 let gen_string () = (
-  let open P3_lib.P3_core in
-  let open P3_lib.P3_core.Box in
+  let open P3_core in
+  let open P3_core.Box in
   let i = box_get_key (box_even ()) in
   let s = "_"^(string_of_int i) in
   s)

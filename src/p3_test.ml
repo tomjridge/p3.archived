@@ -1,7 +1,9 @@
+(* 
 
 (* some tests for p3 *)
-open P3_lib.P3_everything
-open P3_lib.P3_basic_parsers
+open P3_core
+open P3_extra.P3_basic_parsers
+open P3_extra.P3_memo
 
 let counter=ref 0
 
@@ -14,7 +16,7 @@ let parse_1 = (fun x -> (match x with
 let parse_eps = (a "") >>>> (fun _ -> 0)
 
 
-let tbl_E = MyHashtbl.create 100 
+let tbl_E = Hashtbl.create 100 
 let rec parse_E = (fun i -> memo_p3 tbl_E (mkntparser "E" (
   ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
   |||| parse_1
@@ -109,3 +111,4 @@ actually, we should really track how many times each component is called
 
 *)
 
+*)
