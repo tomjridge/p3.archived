@@ -40,18 +40,23 @@ open Box
 (* we want to intern strings *)
 type bstring = string box
 
-module String_map = Map.Make(String)
+module Bool_string = struct
+  type t = bool * string
+  let compare = (Pervasives.compare:t -> t -> int)
+end
 
-let interned_strings = ref String_map.empty
+module Bool_string_map = Map.Make(Bool_string)
+
+let interned_strings = ref Bool_string_map.empty
 
 (* string -> bstring; even indicates an even box is required *)
 let mk_bstring even s = (
-  let v = try Some(String_map.find s (!interned_strings)) with Not_found -> None in
+  let v = try Some(Bool_string_map.find (even,s) (!interned_strings)) with Not_found -> None in
   match v with 
   | Some(x) -> (x:bstring)
   | None -> (
     let bs = (if even then box_even else box_odd) s in
-    let _ = interned_strings := (String_map.add s bs (!interned_strings)) in
+    let _ = interned_strings := (Bool_string_map.add (even,s) bs (!interned_strings)) in
     bs))
 
 let _ = mk_bstring true ""
