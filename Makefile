@@ -1,6 +1,6 @@
 all:
 	cd build && $(MAKE)
-	cd examples && $(MAKE)
+#	cd examples && $(MAKE)
 
 clean:
 	cd build && $(MAKE) clean
