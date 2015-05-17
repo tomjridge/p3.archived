@@ -6,9 +6,9 @@
 #directory "/tmp/l/github/super/e3/build";;
 #load "e3.cma";;
 
+#directory "/tmp/l/github/super/p3/build";;
 #mod_use "p3_core.ml";;
 #mod_use "p3_extra.ml";;
-#mod_use "p3_everything.ml";;
 #mod_use "p3_lib.ml";;
 
 
