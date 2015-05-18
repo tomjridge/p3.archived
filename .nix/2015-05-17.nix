@@ -29,8 +29,8 @@ in stdenv.mkDerivation {
   
     src = fetchgit {
       url = https://github.com/tomjridge/p3.git;
-      rev = "1f4f50";
-      sha256 = "b8324d2a6e9b12b465c49ad80c4195885cdcb358dea364741984859a0a854da7";
+      rev = "0f6c732";
+      sha256 = "5ea4a2486876b2bd382dcdada57593233ac6b1e681539e72d5e144e630aaf1ff";
     };
   
     buildInputs = [ ocaml findlib e3 ];
