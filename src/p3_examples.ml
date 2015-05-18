@@ -1,3 +1,4 @@
+(*
 (**
 {1 p3_examples.ml}
 {2 P3 examples}
@@ -277,3 +278,4 @@ let _ = grammar_of_parser p
 let _ = p3_run_parser_string p "11111"
 
 
+*)

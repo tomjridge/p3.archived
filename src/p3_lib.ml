@@ -24,11 +24,9 @@ type 'a outm = 'a P3_core.outm
 
 let grammar_of_parser = P3_core.grammar_of_parser
 
-let p3_run_parser_string = P3_core.p3_run_parser_string
+let p3_run_parser_string = fun x -> failwith "p3_run_parser_string"
 
 type 'a local_context = 'a P3_core.local_context
-
-let memo_p3 = P3_extra.P3_memo.memo_p3
 
 let string_of_symbol = P3_core.string_of_symbol
 

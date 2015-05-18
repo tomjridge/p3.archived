@@ -28,14 +28,14 @@ module P3_memo = struct
       let ss = i.ss4 in
       let lc4 = normalize_context i i.lc4 ss in
       let SS(s,l,h) = ss in
-      let k = (lc4,SS(Box.box_get_key i.box4,l,h)) in (* about 10% slowdown if we include box key *)
+      let k = (lc4,SS(P3_box.box_get_key i.box4,l,h)) in (* about 10% slowdown if we include box key *)
       Some k)
     | _ -> None)
   
   let memo_p3 tbl p i = (
     memo tbl key_of_input p i)
 
-  let (_:(int local_context * int ty_substring,(string,'a)output) Hashtbl.t -> ('string,'a)parser3 -> ('string,'a)parser3) = memo_p3
+(*  let (_:(int local_context * int ty_substring,(string,'a)output) Hashtbl.t -> ('string,'a)parser3 -> ('string,'a)parser3) = memo_p3*)
 
   (* version that creates table implicitly *)
   (*

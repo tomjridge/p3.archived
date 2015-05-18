@@ -29,8 +29,6 @@ val p3_run_parser_string: (string,'b)parser3 -> string -> 'b list
 
 type 'a local_context = 'a P3_core.local_context
 
-val memo_p3: (int local_context * int ty_substring,('string,'a)output) Hashtbl.t -> ('string,'a)parser3 -> ('string,'a)parser3
-
 val string_of_symbol: symbol -> string
 
 val sym_of_parser: ('a,'b)parser3 -> symbol

@@ -4,38 +4,11 @@
 {2 Prelude}
 *)
 
-module Box = struct
+module GG = P3_gensym
 
-  type 'a box = [ `Box of int * 'a ] (* FIXME change `Box to Box *)
+open P3_box
 
-  let counter = ref 0
 
-  let box x = (
-    let c = !counter in
-    let _ = counter := c+1 in
-    `Box(c,x))
-
-  let box_even x = (
-    let c = !counter in
-    let c = (if c mod 2=0 then c else c+1) in
-    let _ = counter := c+1 in
-    `Box(c,x))
-
-  let box_odd x =  (
-    let c = !counter in
-    let c = (if c mod 2=1 then c else c+1) in
-    let _ = counter := c+1 in
-    `Box(c,x))
-
-  let unbox x = (match x with
-    | `Box((c:int),x) -> x)
-
-  let box_get_key x = (match x with
-    | `Box((c:int),x) -> c)
-
-end
-
-open Box
 
 (* we want to intern strings *)
 type bstring = string box
@@ -208,7 +181,7 @@ type outm' = string outm
 type 'string inr = {
   ss4: 'string ty_substring;
   box4: 'string box; (* the underlying value is a boxed version of the value in .ss4 *)
-  lc4: int local_context; (* contexts work with box keys, not 'string *)
+  lc4: GG.t local_context; (* contexts work with box keys, not 'string *)
   oracle4: ty_oracle;
   tmoracle4: ty_tmoracle;
 }
@@ -562,11 +535,11 @@ let setup_of_parser p s len = (
   let m = grammar_of_parser p in
   let g = earley_grammar_of_grammar m.rules7 in
   let g = integerize_earley_grammar g in
-  let nt = (* dest_NT *) (integerize_sym (sym_of_parser p)) in
+  let nt = (* dest_NT *) (integerize_sym (sym_of_parser p)) |> GG.t_to_int in
   let p_of_tm = m.tmparsers7 in
   let p_of_tm = integerize_tmparsers7 p_of_tm in
   let p_of_tm = (
-    let f1 m (tm,tmp) = Std_map_int.add tm tmp m in
+    let f1 m (tm,tmp) = Std_map_int.add (tm |> GG.t_to_int) tmp m in
     let m = List.fold_left f1 Std_map_int.empty p_of_tm in
     fun tm -> Std_map_int.find tm m)
   in
@@ -578,69 +551,3 @@ let setup_of_parser p s len = (
     method string7=s; 
     method length7=len;
   end)
-
-let (_:('string,'a)parser3 -> 'string -> int -> 
-  < g7: (int * int list) list;
-    length7: int;
-    p_of_tm7: int -> 'string * int * int -> int list;
-    string7: string;
-    sym7: int>) = setup_of_parser
-
-
-(* FIXME eliminate mapping from strings to ints etc *)
-let oracle_of_parser p s len = (
-  let s = setup_of_parser p s len in
-  let open E3_simple in
-  let ps = {
-    nt_items_for_nt=(fun nt -> fun (_,_,i) -> 
-        (s#g7) 
-        |> List.filter (fun (nt',rhs) -> nt = nt')  (* FIXME very inefficient - just to get things working *)
-        |> List.map (fun (nt,rhs) -> (nt,[],rhs,i,i)));
-    p_of_tm=s#p_of_tm7 }
-  in
-  let r = E3_simple.earley ps (s#sym7) (s#string7) (s#length7) in
-  let (o,tmo) = r in
-  let (o,tmo) = (
-    let o = fun (sym1,sym2) -> fun (i,j) -> o ([integerize_sym sym1],integerize_sym sym2) (i,j) in
-    let tmo = fun tm (i,j) -> tmo (box_get_key tm) (i,j) in
-    (o,tmo))
-  in
-  (o,tmo))
-
-let (_:'a parser3' -> string -> int -> (ty_oracle * ty_tmoracle)) = oracle_of_parser
-
-
-let run_parser3 p s len = (
-  let (o,tmo) = oracle_of_parser p s len in
-  run_parser3' (o,tmo) p s len)
-
-let p3_run_parser = run_parser3
-
-let p3_run_parser_string p s = run_parser3 p s (String.length s) (* FIXME remove run_parser3 in favour of p3_run_parser *)
-
-let (_:('a,'b)parser3 -> 'a -> 'b list) = p3_run_parser_string
-
-
-let parse_1 = 
-  mktmparser "1"
-    (fun (SS(s,i,j)) -> if i < j && s.[i]='1' then [SS(s,i,i+1)] else [])
-let parse_1 = parse_1 >>>> (fun _ -> 1)
-
-let parse_eps = 
-  mktmparser "eps"
-    (fun (SS(s,i,j)) -> if i <= j then [SS(s,i,i)] else [])
-let parse_eps = parse_eps >>>> (fun _ -> 0)
-  
-(* example with no memoization *)
-(* right associative ***> *)
-let rec parse_E = (fun i -> (mkntparser "E" (
-  ((parse_E ***> parse_E ***> parse_E) >>>> (fun (x,(y,z)) -> x+y+z))
-  |||| parse_1
-  |||| parse_eps))
-  i)
-
-let (_:('string,int)parser3) = parse_E
-
-let p = parse_E
-let s = "11111"
-let len = 5
