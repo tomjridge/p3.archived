@@ -5,8 +5,8 @@ let
     pkgs = import <nixpkgs> {};
     stdenv = pkgs.stdenv;
     fetchgit = pkgs.fetchgit;
-    ocaml = pkgs.ocaml_4_02_1;
-    findlib = pkgs.ocamlPackages_4_02_1.findlib;
+    ocaml = pkgs.ocaml;
+    findlib = pkgs.ocamlPackages.findlib;
     e3 = import ../e3 {};
 in stdenv.mkDerivation {
     name = "p3";
